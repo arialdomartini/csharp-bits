@@ -22,7 +22,7 @@ namespace CSharpBits.Test
         internal static bool IsEmpty(this IEnumerable<int> bits) => !bits.Any();
     }
 
-    public class DummyTest
+    public class ZeroGapTest
     {
         private static readonly List<int> Empty = new List<int>();
 
