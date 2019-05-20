@@ -14,11 +14,8 @@ namespace CSharpBits.Test
             return s.Substring(0, indexOf) + s.Substring(indexOf + 1, s.Length - indexOf - 1);
         }
 
-        internal static string RemoveChar(this string s, char c)
-        {
-            var indexOf = s.IndexOf(c.ToString(), StringComparison.CurrentCulture);
-            return s.Substring(0, indexOf) + s.Substring(indexOf + 1, s.Length - indexOf - 1);
-        }
+        internal static string RemoveChar(this string s, char c) =>
+            s.RemoveChar(c.ToString());
     }
 
     public class PermutationTest
@@ -38,25 +35,32 @@ namespace CSharpBits.Test
                 ));
         }
 
+
         private static IEnumerable<string> PermutationsIterative(string s)
         {
-            var permutations = new List<(string permutation, string rest)>
+            var pending = new List<(string permutation, string rest)>
             {
                 ("", s)
             };
+            var permutations = new List<string>();
 
-            while (true)
+            while (pending.Any())
             {
-                if (permutations.All(p => p.rest == ""))
-                    return permutations.Select(p => p.permutation);
+                pending = pending
+                    .SelectMany(p =>
+                        p.rest.Select(c =>
+                        (
+                            p.permutation + c,
+                            p.rest.RemoveChar(c)
+                        ))).ToList();
 
-                permutations = permutations.SelectMany(p =>
-                    p.rest.Select(c =>
-                    (
-                        p.permutation + c,
-                        p.rest.RemoveChar(c)
-                    ))).ToList();
+                permutations = pending
+                    .Where(p => p.rest == "")
+                    .Aggregate(permutations, (list, s1) =>
+                        list.Append(s1.permutation).ToList());
             }
+
+            return permutations;
         }
 
         [Fact]
