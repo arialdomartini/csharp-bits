@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using FluentAssertions;
 using Xunit;
 
@@ -16,10 +17,62 @@ namespace CSharpBits.Test
 
         internal static string RemoveChar(this string s, char c) =>
             s.RemoveChar(c.ToString());
+
+        internal static string Swap(this string s, int i, int k) =>
+            new StringBuilder(s)
+            {
+                [i] = s[k],
+                [k] = s[i]
+            }.ToString();
     }
 
     public class PermutationTest
     {
+        [Theory]
+        [InlineData("01234", 0, 1, "10234")]
+        [InlineData("01234", 0, 4, "41230")]
+        [InlineData("01234", 3, 1, "03214")]
+        void swap_test(string s, int i, int j, string expected)
+        {
+            s.Swap(i, j).Should().Be(expected);
+        }
+
+        IEnumerable<string> PermutationsSwap(string s) =>
+            PermutationsSwap(s, 0);
+
+        private static IEnumerable<string> PermutationsSwap(string s, int from)
+        {
+            var permutations = new List<string> {s};
+
+            for (var i = from; i < s.Length; i++)
+            {
+                for (var j = i + 1; j < s.Length; j++)
+                {
+                    permutations.AddRange(
+                        PermutationsSwap(s.Swap(i, j), i + 1));
+                }
+            }
+
+            return permutations;
+        }
+
+        [Fact]
+        void with_swap()
+        {
+            var result = PermutationsSwap("abc");
+
+            result.Should().BeEquivalentTo(new List<string>
+            {
+                "abc",
+                "acb",
+                "bac",
+                "bca",
+                "cab",
+                "cba"
+            });
+        }
+
+
         private static IEnumerable<string> Permutations(string s)
             => Permutations("", s).Select(e => e.Item1);
 
