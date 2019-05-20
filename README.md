@@ -20,6 +20,6 @@ C# has no tail recursion optimization. Write a function that takes the elements 
 
 
 ## Permutations
-Calculate all the possible permutations of a string, with a recursive function
+Calculate all the possible permutations of a string, both itertively and recursively
 
 [PermutationsTest.cs](https://github.com/arialdomartini/csharp-bits/blob/master/src/CSharpBits.Test/PermutationsTest.cs)
