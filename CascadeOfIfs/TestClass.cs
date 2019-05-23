@@ -4,8 +4,6 @@
     {
         HResult SomeFunction()
         {
-            var result = HResult.Ok;
-
             if(Succeeded(Operation1()))
             {
                 if(Succeeded(Operation2()))
@@ -14,28 +12,27 @@
                     {
                         if(Succeeded(Operation4()))
                         {
+                            return HResult.Ok;
                         }
                         else
                         {
-                            result = HResult.Operation4Failed;
+                            return HResult.Operation4Failed;
                         }
                     }
                     else
                     {
-                        result = HResult.Operation3Failed;
+                        return HResult.Operation3Failed;
                     }
                 }
                 else
                 {
-                    result = HResult.Operation2Failed;
+                    return HResult.Operation2Failed;
                 }
             }
             else
             {
-                result = HResult.Operation1Failed;
+                return HResult.Operation1Failed;
             }
-
-            return result;
         }
 
         private string Operation1()
