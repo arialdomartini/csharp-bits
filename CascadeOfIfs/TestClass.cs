@@ -4,7 +4,7 @@
     {
         HResult SomeFunction()
         {
-            var error = HResult.Ok;
+            var result = HResult.Ok;
 
             if(Succeeded(Operation1()))
             {
@@ -17,25 +17,25 @@
                         }
                         else
                         {
-                            error = HResult.Operation4Failed;
+                            result = HResult.Operation4Failed;
                         }
                     }
                     else
                     {
-                        error = HResult.Operation3Failed;
+                        result = HResult.Operation3Failed;
                     }
                 }
                 else
                 {
-                    error = HResult.Operation2Failed;
+                    result = HResult.Operation2Failed;
                 }
             }
             else
             {
-                error = HResult.Operation1Failed;
+                result = HResult.Operation1Failed;
             }
 
-            return error;
+            return result;
         }
 
         private string Operation1()
