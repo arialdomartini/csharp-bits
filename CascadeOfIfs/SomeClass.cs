@@ -27,35 +27,19 @@ namespace CascadeOfIfs
 
         internal HResult SomeFunction()
         {
-            if (Succeeded(Operation1()))
-            {
-                if (Succeeded(Operation2()))
-                {
-                    if (Succeeded(Operation3()))
-                    {
-                        if (Succeeded(Operation4()))
-                        {
-                            return HResult.Ok;
-                        }
-                        else
-                        {
-                            return HResult.Operation4Failed;
-                        }
-                    }
-                    else
-                    {
-                        return HResult.Operation3Failed;
-                    }
-                }
-                else
-                {
-                    return HResult.Operation2Failed;
-                }
-            }
-            else
-            {
+            if (!Succeeded(Operation1()))
                 return HResult.Operation1Failed;
-            }
+
+            if (!Succeeded(Operation2()))
+                return HResult.Operation2Failed;
+
+            if (!Succeeded(Operation3()))
+                return HResult.Operation3Failed;
+
+            if (!Succeeded(Operation4()))
+                return HResult.Operation4Failed;
+
+            return HResult.Ok;
         }
 
         private string Operation1()
