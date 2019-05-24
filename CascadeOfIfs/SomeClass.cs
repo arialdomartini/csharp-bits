@@ -21,7 +21,12 @@ namespace CascadeOfIfs
         }
     }
 
-    public class SomeClass
+    internal interface IOperation
+    {
+        string DoJob();
+    }
+
+    internal class SomeClass
     {
         internal string FailWhen = "some condition";
 
@@ -42,29 +47,14 @@ namespace CascadeOfIfs
             return HResult.Ok;
         }
 
-        private string Operation1()
-        {
-            // some operations
-            return "operation1 result";
-        }
-
-        private string Operation2()
-        {
-            // some operations
-            return "operation2 result";
-        }
-
-        private string Operation3()
-        {
-            // some operations
-            return "operation3 result";
-        }
-
-        private string Operation4()
-        {
-            // some operations
-            return "operation4 result";
-        }
+        private string Operation1() =>
+            new Operation1().DoJob();
+        private string Operation2() =>
+            new Operation2().DoJob();
+        private string Operation3() =>
+            new Operation3().DoJob();
+        private string Operation4() =>
+            new Operation4().DoJob();
 
         private bool Succeeded(string operationResult) =>
             operationResult != FailWhen;
