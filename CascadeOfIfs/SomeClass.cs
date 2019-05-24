@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using FluentAssertions;
 using Xunit;
 
@@ -47,35 +48,28 @@ namespace CascadeOfIfs
                 new Operation4()
             };
 
-            foreach (var operation in operations)
-            {
-                if (!_check.Succeeded(operation.DoJob()))
-                    return operation.ErrorCode;
-            }
-
-            return HResult.Ok;
+            return operations.ChainTogether(_check).Execute();
         }
     }
 
-    internal class Check
+    internal static class OperationsExtensions
     {
-        private readonly string _failWhen;
-
-        public Check(string failWhen)
-        {
-            _failWhen = failWhen;
-        }
-
-        internal bool Succeeded(string operationResult) =>
-            operationResult != _failWhen;
+        internal static IRing ChainTogether(this IEnumerable<IOperation> operations, Check check) =>
+            operations.Reverse()
+                .Select(o => new OperationRing(check, o))
+                .Aggregate((IRing) new PassAll(), (previous, ring) =>
+                {
+                    ring.Next = previous;
+                    return ring;
+                });
     }
 
     internal enum HResult
     {
-        Ok,
         Operation1Failed,
         Operation2Failed,
         Operation3Failed,
         Operation4Failed,
+        Ok
     }
 }
