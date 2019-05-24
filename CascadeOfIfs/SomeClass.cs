@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Collections.Generic;
+using FluentAssertions;
 using Xunit;
 
 namespace CascadeOfIfs
@@ -13,7 +14,7 @@ namespace CascadeOfIfs
         [InlineData("never", HResult.Ok)]
         void acceptance_test(string failWhen, HResult expectedResult)
         {
-            var sut = new SomeClass {FailWhen = failWhen};
+            var sut = new SomeClass(new Check(failWhen));
 
             var result = sut.SomeFunction();
 
@@ -24,40 +25,49 @@ namespace CascadeOfIfs
     internal interface IOperation
     {
         string DoJob();
+        HResult ErrorCode { get; }
     }
 
     internal class SomeClass
     {
-        internal string FailWhen = "some condition";
+        private readonly Check _check;
+
+        public SomeClass(Check check)
+        {
+            _check = check;
+        }
 
         internal HResult SomeFunction()
         {
-            if (!Succeeded(Operation1()))
-                return HResult.Operation1Failed;
+            var operations = new List<IOperation>
+            {
+                new Operation1(),
+                new Operation2(),
+                new Operation3(),
+                new Operation4()
+            };
 
-            if (!Succeeded(Operation2()))
-                return HResult.Operation2Failed;
-
-            if (!Succeeded(Operation3()))
-                return HResult.Operation3Failed;
-
-            if (!Succeeded(Operation4()))
-                return HResult.Operation4Failed;
+            foreach (var operation in operations)
+            {
+                if (!_check.Succeeded(operation.DoJob()))
+                    return operation.ErrorCode;
+            }
 
             return HResult.Ok;
         }
+    }
 
-        private string Operation1() =>
-            new Operation1().DoJob();
-        private string Operation2() =>
-            new Operation2().DoJob();
-        private string Operation3() =>
-            new Operation3().DoJob();
-        private string Operation4() =>
-            new Operation4().DoJob();
+    internal class Check
+    {
+        private readonly string _failWhen;
 
-        private bool Succeeded(string operationResult) =>
-            operationResult != FailWhen;
+        public Check(string failWhen)
+        {
+            _failWhen = failWhen;
+        }
+
+        internal bool Succeeded(string operationResult) =>
+            operationResult != _failWhen;
     }
 
     internal enum HResult

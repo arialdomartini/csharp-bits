@@ -5,5 +5,6 @@ namespace CascadeOfIfs
         {
             return "operation2 result";
         }
+        public HResult ErrorCode => HResult.Operation2Failed;
     }
 }
