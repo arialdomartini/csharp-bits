@@ -58,6 +58,7 @@ namespace CSharpBits.Test
         }
     }
 
+
     public class StateMonadTest
     {
         private readonly ITestOutputHelper _outputHelper;
