@@ -1,9 +1,10 @@
 using System;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 using static CSharpBits.Test.StateMonadTest;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace CSharpBits.Test
 {
@@ -25,6 +26,10 @@ namespace CSharpBits.Test
                 var (randomA, newSeed) = generator(seed);
                 return (func(randomA), newSeed);
             };
+
+        internal static Generator<TB> Select<TA, TB>(
+            this Generator<TA> generator,
+            Func<TA, TB> func) => Map(generator, func);
     }
 
     public class StateMonadTest
@@ -76,10 +81,25 @@ namespace CSharpBits.Test
         public void should_generate_other_primitives_using_Map()
         {
             Generator<int> nextInt = NextInt;
-            Generator<bool> nextBool = nextInt.Map(i =>
-            {
-                return i % 2 == 0;
-            });
+            Generator<bool> nextBool = nextInt.Map(i => i % 2 == 0);
+
+            var (random1, seed1) = nextBool(0);
+            var (random2, seed2) = nextBool(seed1);
+            var (random3, _) = nextBool(seed2);
+
+            random1.Should().Be(true);
+            random2.Should().Be(false);
+            random3.Should().Be(true);
+        }
+
+
+        [Fact]
+        public void should_generate_other_primitives_using_Linq()
+        {
+            Generator<int> nextInt = NextInt;
+            Generator<bool> nextBool =
+                from i in nextInt
+                    select i % 2 == 0;
 
             var (random1, seed1) = nextBool(0);
             var (random2, seed2) = nextBool(seed1);
