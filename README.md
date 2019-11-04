@@ -23,3 +23,8 @@ C# has no tail recursion optimization. Write a function that takes the elements 
 Calculate all the possible permutations of a string, both itertively and recursively
 
 [PermutationsTest.cs](https://github.com/arialdomartini/csharp-bits/blob/master/src/CSharpBits.Test/PermutationsTest.cs)
+
+## Cascade of ifs
+Remove a convoluted code full of if statements by using Chain of Responsibility
+
+[Cascade of IFs](https://github.com/arialdomartini/csharp-bits/tree/master/src/CascadeOfIfs)
