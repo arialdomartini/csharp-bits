@@ -1,8 +1,9 @@
 using System.Collections.Generic;
-using FluentAssertions;
 using Xunit;
+using CSharpBits.CascadeOfIfs;
+using FluentAssertions;
 
-namespace CSharpBits.CascadeOfIfs
+namespace CSharpBits.Test.CascadeOfIfs
 {
     public class TestCase
     {
