@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package CSharpBits.SampleGrpc;
+
+import "google/protobuf/timestamp.proto";
+
+service AddressBook {
+    rpc GetAll(AddressRequest) returns(AddressBookItems);
+}
+
+message AddressRequest {}
+
+message AddressBookItems {
+    repeated Person people = 1;
+
+    message Person {
+        string name = 1;
+        int32 id = 2;
+        string email = 3;
+        repeated PhoneNumber phones = 4;
+        google.protobuf.Timestamp last_updated = 5;
+
+        message PhoneNumber {
+            string number = 1;
+            PhoneType type = 2;
+
+            enum PhoneType {
+                MOBILE = 0;
+                HOME = 1;
+                WORK = 2;
+            }
+        }
+    }
+}

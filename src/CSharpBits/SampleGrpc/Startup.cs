@@ -17,6 +17,7 @@ namespace CSharpBits.SampleGrpc
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapGrpcService<GreeterService>();
+                endpoints.MapGrpcService<AddressBookService>();
             });
         }
     }

@@ -14,9 +14,9 @@ namespace CSharpBits.Test.SampleGrpc
             {
                 var client = new Greeter.GreeterClient(channel);
 
-                var reply = await client.SayHelloAsync(new HelloRequest {Name = "Mario"});
+                var response = await client.SayHelloAsync(new HelloRequest {Name = "Mario"});
 
-                reply.Message.Should().Be("Hi, Mario!");
+                response.Message.Should().Be("Hi, Mario!");
             }
         }
     }

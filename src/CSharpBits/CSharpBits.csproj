@@ -16,6 +16,9 @@
         <Protobuf Include="SampleGrpc\greet.proto">
             <Generator>MSBuild:Compile</Generator>
         </Protobuf>
+        <Protobuf Include="SampleGrpc\addressBook.proto">
+            <Generator>MSBuild:Compile</Generator>
+        </Protobuf>
     </ItemGroup>
 
 </Project>
