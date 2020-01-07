@@ -1,4 +1,4 @@
-namespace CascadeOfIfs
+namespace CSharpBits.CascadeOfIfs
 {
     internal enum HResult
     {

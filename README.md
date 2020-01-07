@@ -27,4 +27,4 @@ Calculate all the possible permutations of a string, both itertively and recursi
 ## Cascade of ifs
 Remove a convoluted code full of if statements by using Chain of Responsibility
 
-[Cascade of IFs](https://github.com/arialdomartini/csharp-bits/tree/master/src/CascadeOfIfs)
+[Cascade of IFs](https://github.com/arialdomartini/csharp-bits/tree/master/src/CSharpBits/CascadeOfIfs)

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CascadeOfIfs
+namespace CSharpBits.CascadeOfIfs
 {
     internal class Chain
     {

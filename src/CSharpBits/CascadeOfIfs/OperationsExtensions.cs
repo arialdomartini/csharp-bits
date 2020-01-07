@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CascadeOfIfs
+namespace CSharpBits.CascadeOfIfs
 {
     internal static class OperationsExtensions
     {

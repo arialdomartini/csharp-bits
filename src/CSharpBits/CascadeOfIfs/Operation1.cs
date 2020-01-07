@@ -1,4 +1,4 @@
-namespace CascadeOfIfs
+namespace CSharpBits.CascadeOfIfs
 {
     internal class Operation1 : IOperation {
         public string DoJob()

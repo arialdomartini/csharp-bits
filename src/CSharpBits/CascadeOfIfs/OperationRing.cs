@@ -1,4 +1,4 @@
-namespace CascadeOfIfs
+namespace CSharpBits.CascadeOfIfs
 {
     internal class OperationRing : IRing
     {

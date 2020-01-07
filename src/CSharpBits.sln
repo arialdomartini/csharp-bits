@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpBits.Test", "CSharpBits.Test\CSharpBits.Test.csproj", "{53FA9E40-A91C-494B-B140-2D722CD7A771}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CascadeOfIfs", "CascadeOfIfs\CascadeOfIfs.csproj", "{A0E9A088-D08F-440D-AB8D-EE2113012561}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpBits", "CSharpBits\CSharpBits.csproj", "{A0E9A088-D08F-440D-AB8D-EE2113012561}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

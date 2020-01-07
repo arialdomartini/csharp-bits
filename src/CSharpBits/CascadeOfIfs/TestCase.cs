@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace CascadeOfIfs
+namespace CSharpBits.CascadeOfIfs
 {
     public class TestCase
     {
