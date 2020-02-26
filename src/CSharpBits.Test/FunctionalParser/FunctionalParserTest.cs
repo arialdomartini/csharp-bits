@@ -1,3 +1,4 @@
+using System.Linq;
 using FluentAssertions;
 using Pie.Monads;
 using Xunit;
@@ -50,7 +51,7 @@ namespace CSharpBits.Test.FunctionalParser
         }
 
         [Fact]
-        void longer_chain()
+        void long_chain()
         {
             var state3 = State.Empty("3");
             var state2 = State.From("2", ("message 2", state3));
@@ -63,6 +64,41 @@ namespace CSharpBits.Test.FunctionalParser
                     .Right();
 
             result.Result.Tracks.Should().BeEquivalentTo("1", "2");
+        }
+
+        [Fact]
+        void failing_long_chain()
+        {
+            var state3 = State.Empty("3");
+            var state2 = State.From("2", ("message 2", state3));
+            var state1 = State.From("1", ("message 1", state2));
+
+            var result =
+                Pure(state1)
+                    .Bind(s => s.State.Eval("message 1", s.Result))
+                    .Bind(s => s.State.Eval("message 3", s.Result))
+                    .Left();
+
+            result.Should().Be("error");
+        }
+
+        [Fact]
+        void with_aggregate()
+        {
+            var state3 = State.Empty("3");
+            var state2 = State.From("2", ("message 2", state3));
+            var state1 = State.From("1", ("message 1", state2));
+
+            var current = Pure(state1);
+
+
+            var messages = new[] {"message 1", "message 2"};
+            foreach (var message in messages)
+            {
+                current = current.Bind(s => s.State.Eval(message, s.Result));
+            }
+
+            current.Right().Result.Tracks.Should().BeEquivalentTo("1", "2");
         }
     }
 }
