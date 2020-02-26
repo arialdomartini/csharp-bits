@@ -12,5 +12,7 @@ namespace CSharpBits.Test.FunctionalParser
         public State To { get; private set; }
 
         public static implicit operator Destination((string message, State to) tuple) => new Destination(tuple.message, tuple.to);
+
+        public bool CanHandle(string message) => message==Message;
     }
 }

@@ -30,5 +30,21 @@ namespace CSharpBits.Test.FunctionalParser
             result.State.Should().Be(to);
             result.Result.Tracks.Should().BeEquivalentTo("1");
         }
+
+        [Fact]
+        void support_to_multiple_destinations()
+        {
+            var to = State.Empty("2");
+            var from = State.From("1", ("one", to), ("two", to));
+
+            {
+                var result = from.Eval("one", new Result()).Right();
+                result.Result.Tracks.Should().BeEquivalentTo("1");
+            }
+            {
+                var result = from.Eval("two", new Result()).Right();
+                result.Result.Tracks.Should().BeEquivalentTo("1");
+            }
+        }
     }
 }

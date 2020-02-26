@@ -1,3 +1,4 @@
+using System.Linq;
 using Pie.Monads;
 
 namespace CSharpBits.Test.FunctionalParser
@@ -5,23 +6,25 @@ namespace CSharpBits.Test.FunctionalParser
     internal class State
     {
         private readonly string _name;
-        private readonly Destination _destination;
+        private readonly Destination[] _destinations;
 
-        private State(string name, Destination destination = default)
+        private State(string name, params Destination[] destinations)
         {
             _name = name;
-            _destination = destination;
+            _destinations = destinations;
         }
 
-        public Either<string, StateResult> Eval(string unknown, Result result)
+        public Either<string, StateResult> Eval(string message, Result result)
         {
-            if (unknown != _destination.Message) return "error";
+            var destination = _destinations.SingleOrDefault(d => d.CanHandle(message));
 
-            return StateResult.Success(_destination.To, result.Track(_name));
+            if(destination.Equals(default(Destination))) return "error";
+
+            return StateResult.Success(destination.To, result.Track(_name));
         }
 
         internal static State Empty(string name) => new State(name);
 
-        internal static State From(string name, Destination destination) => new State(name, destination);
+        internal static State From(string name, params Destination[] destinations) => new State(name, destinations);
     }
 }
