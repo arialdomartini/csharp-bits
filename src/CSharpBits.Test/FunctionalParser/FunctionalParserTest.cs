@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Pie.Monads;
 using Xunit;
 
 namespace CSharpBits.Test.FunctionalParser
@@ -6,6 +7,7 @@ namespace CSharpBits.Test.FunctionalParser
     public class FunctionalParserTest
     {
         private const string Message = "message";
+        private static Either<string, StateResult> Pure(State state) => StateResult.Success(state, new Result());
 
         [Fact]
         void single_state_fails()
@@ -52,12 +54,13 @@ namespace CSharpBits.Test.FunctionalParser
         {
             var state3 = State.Empty("3");
             var state2 = State.From("2", ("message 2", state3));
-            var state1 = State.From("1", ("one", state2));
+            var state1 = State.From("1", ("message 1", state2));
 
-            var result = state1
-                .Eval("one", new Result())
-                .Bind(stateResult => stateResult.State.Eval("message 2", stateResult.Result))
-                .Right();
+            var result =
+                Pure(state1)
+                    .Bind(s => s.State.Eval("message 1", s.Result))
+                    .Bind(s => s.State.Eval("message 2", s.Result))
+                    .Right();
 
             result.Result.Tracks.Should().BeEquivalentTo("1", "2");
         }
