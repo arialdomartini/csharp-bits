@@ -4,12 +4,6 @@ using Xunit;
 
 namespace CSharpBits.Test.FunctionalParser
 {
-    internal static class StateAssertions
-    {
-        internal static void ShouldBeRight<L, R>(this Either<L, R> either) => either.IsRight().Should().Be(true);
-        internal static void ShouldBeLeft<L, R>(this Either<L, R> either) => either.IsLeft().Should().Be(true);
-    }
-
     public class FunctionalParserTest
     {
         private const string Message = "message";
@@ -17,11 +11,12 @@ namespace CSharpBits.Test.FunctionalParser
         [Fact]
         void single_state_fails()
         {
-            var emptyState = State.Empty();
+            var to = State.Empty();
+            var emptyState = State.From(Message, to);
 
             var result = emptyState.Eval("unknown");
 
-            result.ShouldBeLeft();
+            result.Left().Should().Be("error");
         }
 
         [Fact]
@@ -30,9 +25,9 @@ namespace CSharpBits.Test.FunctionalParser
             var to = State.Empty();
             var from = State.From(Message, to);
 
-            var result = from.Eval(Message);
+            var result = from.Eval(Message).Right();
 
-            result.ShouldBeRight();
+            result.Should().Be(to);
         }
     }
 
