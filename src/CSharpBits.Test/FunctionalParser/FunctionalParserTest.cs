@@ -46,5 +46,20 @@ namespace CSharpBits.Test.FunctionalParser
                 result.Result.Tracks.Should().BeEquivalentTo("1");
             }
         }
+
+        [Fact]
+        void longer_chain()
+        {
+            var state3 = State.Empty("3");
+            var state2 = State.From("2", ("message 2", state3));
+            var state1 = State.From("1", ("one", state2));
+
+            var result = state1
+                .Eval("one", new Result())
+                .Bind(stateResult => stateResult.State.Eval("message 2", stateResult.Result))
+                .Right();
+
+            result.Result.Tracks.Should().BeEquivalentTo("1", "2");
+        }
     }
 }
