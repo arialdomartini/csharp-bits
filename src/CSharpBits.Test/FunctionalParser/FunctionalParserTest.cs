@@ -10,8 +10,9 @@ namespace CSharpBits.Test.FunctionalParser
         [Fact]
         void single_state_fails()
         {
-            var to = State.Empty("2");
-            var emptyState = State.From("1", Message, to);
+            var to = State
+                .Empty("2");
+            var emptyState = State.From("1", (Message, to));
 
             var result = emptyState.Eval("unknown", new Result());
 
@@ -22,7 +23,7 @@ namespace CSharpBits.Test.FunctionalParser
         void single_state_move_to_next_state()
         {
             var to = State.Empty("2");
-            var from = State.From("1", Message, to);
+            var from = State.From("1", (Message, to));
 
             var result = from.Eval(Message, new Result()).Right();
 
