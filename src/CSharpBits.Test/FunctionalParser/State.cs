@@ -5,12 +5,12 @@ namespace CSharpBits.Test.FunctionalParser
 {
     internal class State
     {
-        private readonly string _name;
+        internal string Name { get; }
         private readonly Destination[] _destinations;
 
         private State(string name, params Destination[] destinations)
         {
-            _name = name;
+            Name = name;
             _destinations = destinations;
         }
 
@@ -20,7 +20,7 @@ namespace CSharpBits.Test.FunctionalParser
 
             if(destination.Equals(default(Destination))) return "error";
 
-            return StateResult.Success(destination.To, result.Track(_name));
+            return StateResult.Success(destination.To, result.Track(Name));
         }
 
         internal static State Empty(string name) => new State(name);

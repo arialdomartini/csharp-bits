@@ -2,17 +2,19 @@ namespace CSharpBits.Test.FunctionalParser
 {
     internal struct Destination
     {
-        public Destination(string message, State to)
+        private readonly string _message;
+
+        public State To { get; }
+
+        private Destination(string message, State to)
         {
-            Message = message;
+            _message = message;
             To = to;
         }
 
-        public string Message { get; private set; }
-        public State To { get; private set; }
+        public static implicit operator Destination((string message, State to) tuple) =>
+            new Destination(tuple.message, tuple.to);
 
-        public static implicit operator Destination((string message, State to) tuple) => new Destination(tuple.message, tuple.to);
-
-        public bool CanHandle(string message) => message==Message;
+        public bool CanHandle(string message) => message == _message;
     }
 }
