@@ -9,6 +9,15 @@ namespace CSharpBits.Test
 
     public class AnotherStateMonadTest
     {
+    [Fact]
+    void dhkdhk()
+    {
+        var month = 1;
+        var day = 4;
+        var s = $"{2000}-{month:04}-{day:00}";
+        s.Should().Be("2000-01-12");
+    }
+
         [Fact]
         public void stateful_cart()
         {
