@@ -29,6 +29,14 @@ namespace CSharpBits.Test.ReaderMonad
                         .Run(env);
             return rf.ToReader();
         }
+
+        internal Reader<TEnv, TResultG> Map<TResultG>(Func<TResult, TResultG> g)
+        {
+            Func<TEnv, TResultG> rg = env =>
+                g(_f(env));
+
+            return rg.ToReader();
+        }
     }
 
     static class ReaderMonadExtensions
@@ -95,13 +103,31 @@ namespace CSharpBits.Test.ReaderMonad
                 Reader(env =>
                     $"Hi {name}! env={env}");
 
-            Reader<int, string> Second(string s) =>
+            Reader<Env, string> Second(string s) =>
                 Reader(env =>
                     env > 42 ? s.ToUpper() : s.ToLower());
 
             var gf = First("Mario").Bind(Second);
 
             gf.Run(42).Should().Be("hi mario! env=42");
+        }
+
+        [Fact]
+        void map()
+        {
+            Reader<Env, string> Reader(Func<Env, string> f) =>
+                f.ToReader();
+
+            Reader<Env, string> First(string name) =>
+                Reader(env =>
+                    $"Hi {name}! env={env}");
+
+            string Second(string s) =>
+                s.ToUpper();
+
+            var gf = First("Mario").Map(Second);
+
+            gf.Run(42).Should().Be("HI MARIO! ENV=42");
         }
     }
 }
