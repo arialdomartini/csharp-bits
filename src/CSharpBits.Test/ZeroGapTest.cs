@@ -82,5 +82,4 @@ namespace CSharpBits.Test
         private static bool SequenceHasStarted(bool started, int head) =>
             head.IsSeparator() || started;
     }
-
 }
