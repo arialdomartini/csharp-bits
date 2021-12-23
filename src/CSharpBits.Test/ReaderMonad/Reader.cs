@@ -51,6 +51,30 @@ namespace CSharpBits.Test.ReaderMonad
             a => b => f(a, b);
     }
 
+    internal static class LinqExtensions
+    {
+        internal static Reader<E, B> Select<E, A, B>(this Reader<E, A> reader, Func<A, B> f) =>
+            reader.Map(f);
+
+        internal static Reader<E, C> SelectMany<E, A, B, C>(
+            this Reader<E, A> reader,
+            Func<A, Reader<E, B>> bind,
+            Func<A, B, C> project)
+        {
+            Func<E, C> f = env =>
+            {
+                A resultA = reader.Run(env);
+                B bound = reader.Bind(bind).Run(env);
+                C project1 = project(resultA, bound);
+
+                return project1;
+            };
+
+
+            return f.ToReader();
+        }
+    }
+
     public class ReaderMonadTest
     {
         string Greet(string name, Env env) =>
@@ -128,6 +152,29 @@ namespace CSharpBits.Test.ReaderMonad
             var gf = First("Mario").Map(Second);
 
             gf.Run(42).Should().Be("HI MARIO! ENV=42");
+        }
+
+        [Fact]
+        void with_linq()
+        {
+            Reader<Env, string> Reader(Func<Env, string> f) =>
+                f.ToReader();
+
+            Reader<Env, string> First(string name) =>
+                Reader(env =>
+                    $"Hi {name}! env={env}");
+
+            Reader<Env, string> Second(string s) =>
+                Reader(env =>
+                    env > 42 ? s.ToUpper() : s.ToLower());
+
+            var re =
+                from r in First("Mario")
+                from v in Second(r)
+                select v;
+
+            re.Run(42).Should().Be("hi mario! env=42");
+            re.Run(43).Should().Be("HI MARIO! ENV=43");
         }
     }
 }
