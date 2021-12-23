@@ -18,9 +18,17 @@ namespace CSharpBits.Test.ReaderMonad
         internal static Reader<TEnv, TResult> From(Func<TEnv, TResult> f) =>
             new Reader<TEnv, TResult>(f);
 
-
         internal TResult Run(TEnv i) =>
             _f(i);
+
+        internal Reader<TEnv, TResultG> Bind<TResultG>(Func<TResult, Reader<TEnv, TResultG>> g)
+        {
+            Func<TEnv, TResultG> rf =
+                env =>
+                    g(_f(env))
+                        .Run(env);
+            return rf.ToReader();
+        }
     }
 
     static class ReaderMonadExtensions
@@ -75,6 +83,25 @@ namespace CSharpBits.Test.ReaderMonad
             var curried = complete.curried();
             var result = curried("Mario").ToReader().Run(42);
             result.Should().Be("Hi Mario! env=42");
+        }
+
+        [Fact]
+        void binding_2_functions()
+        {
+            Reader<Env, string> Reader(Func<Env, string> f) =>
+                f.ToReader();
+
+            Reader<Env, string> First(string name) =>
+                Reader(env =>
+                    $"Hi {name}! env={env}");
+
+            Reader<int, string> Second(string s) =>
+                Reader(env =>
+                    env > 42 ? s.ToUpper() : s.ToLower());
+
+            var gf = First("Mario").Bind(Second);
+
+            gf.Run(42).Should().Be("hi mario! env=42");
         }
     }
 }
