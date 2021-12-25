@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Security.Cryptography.Xml;
 using CSharpBits.Test.ReaderMonad;
 using FluentAssertions;
+using Microsoft.VisualBasic.CompilerServices;
 using Xunit;
 
 namespace CSharpBits.Test.ManualReaderMonad
@@ -20,6 +22,22 @@ namespace CSharpBits.Test.ManualReaderMonad
 
         internal static Func<E, B> Bind<E, A, B>(this Func<E, A> reader, Func<A, Func<E, B>> f) =>
             env => f(reader(env)).Run(env);
+    }
+
+    internal static class LinqExtensions
+    {
+        internal static Func<E, C> SelectMany<E, A, B, C>(
+            this Func<E, A> reader,
+            Func<A, Func<E, B>> bind,
+            Func<A, B, C> project) =>
+            env =>
+            {
+                A a = reader.Run(env);
+                Func<E, B> func = bind(a);
+                B b = func(env);
+                var c = project(a, b);
+                return c;
+            };
     }
 
     public class ManualReaderMonadTest
@@ -57,7 +75,7 @@ namespace CSharpBits.Test.ManualReaderMonad
 
             result.Should().Be("i'm greeting mario while env=42");
         }
-        
+
         [Fact]
         void bind_a_function()
         {
@@ -77,6 +95,28 @@ namespace CSharpBits.Test.ManualReaderMonad
                     .Run(42);
 
             result.Should().Be("i'm greeting mario while Env=42");
+        }
+
+        [Fact]
+        void using_linq()
+        {
+            string Second(string s, Env env) =>
+                env > 42 ?  s.ToUpper() : s.ToLower();
+
+            Func<string, Env, string> second = Second;
+
+            var curriedSecond = second.curried();
+
+            Func<string, int, string> func = Greet;
+            var greet = func.Curried();
+
+            var result =
+                from x in greet("Mario")
+                from y in curriedSecond(x)
+                select $"{y}!!";
+
+            result.Run(42)
+                .Should().Be("i'm greeting mario while env=42!!");
         }
     }
 }
