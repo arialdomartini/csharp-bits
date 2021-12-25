@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net.NetworkInformation;
 using CSharpBits.Test.ReaderMonad;
 using FluentAssertions;
 using Xunit;
@@ -18,6 +17,9 @@ namespace CSharpBits.Test.ManualReaderMonad
 
         internal static Func<E, B> Map<E, A, B>(this Func<E, A> reader, Func<A, B> f) =>
             env => f(reader.Run(env));
+
+        internal static Func<E, B> Bind<E, A, B>(this Func<E, A> reader, Func<A, Func<E, B>> f) =>
+            env => f(reader(env)).Run(env);
     }
 
     public class ManualReaderMonadTest
@@ -28,7 +30,7 @@ namespace CSharpBits.Test.ManualReaderMonad
         [Fact]
         void run_a_function()
         {
-            Func<string, int, string> func = Greet;
+            Func<string, Env, string> func = Greet;
 
             var greet = func.Curried();
 
@@ -42,15 +44,39 @@ namespace CSharpBits.Test.ManualReaderMonad
         [Fact]
         void apply_a_function_to_a_function_like_functor_map()
         {
-            Func<string, string> toLower = s => s.ToLower();
+            string ToLower(string s) =>
+                s.ToLower();
 
             Func<string, int, string> func = Greet;
-
             var greet = func.Curried();
 
-            var result = greet("Mario").Map(toLower).Run(42);
+            var result =
+                greet("Mario")
+                    .Map(ToLower)
+                    .Run(42);
 
             result.Should().Be("i'm greeting mario while env=42");
+        }
+        
+        [Fact]
+        void bind_a_function()
+        {
+            string Second(string s, Env env) =>
+                env > 42 ? s.ToLower() : s.ToUpper();
+
+            Func<string, Env, string> second = Second;
+
+            var curriedSecond = second.curried();
+
+            Func<string, int, string> func = Greet;
+            var greet = func.Curried();
+
+            var result =
+                greet("Mario")
+                    .Bind(curriedSecond)
+                    .Run(42);
+
+            result.Should().Be("i'm greeting mario while Env=42");
         }
     }
 }
