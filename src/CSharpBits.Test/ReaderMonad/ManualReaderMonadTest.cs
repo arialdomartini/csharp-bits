@@ -1,4 +1,5 @@
 ﻿using System;
+using CSharpBits.Test.ReaderMonad;
 using FluentAssertions;
 using Xunit;
 
@@ -17,6 +18,9 @@ namespace CSharpBits.Test.ManualReaderMonad
         Func<A, Func<B,C>> Curry<A, B, C>(Func<A, B, C> f) =>
             a => b => f(a, b);
 
+        A Run<E, A>(Func<E, A> reader, E env) =>
+            reader(env);
+
         [Fact]
         void run_a_function()
         {
@@ -24,7 +28,7 @@ namespace CSharpBits.Test.ManualReaderMonad
 
             var applied = greet("Mario");
 
-            var result = applied(42);
+            var result = Run(applied, 42);
 
             result.Should().Be("I'm greeting Mario while Env=42");
         }
