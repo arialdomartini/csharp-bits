@@ -178,3 +178,7 @@ namespace CSharpBits.Test.ReaderMonad
         }
     }
 }
+
+namespace CSharpBits.Test.ManualReaderMonad
+{
+}
