@@ -1,9 +1,11 @@
 ﻿using System;
-using System.Security.Cryptography.Xml;
 using CSharpBits.Test.ReaderMonad;
 using FluentAssertions;
-using Microsoft.VisualBasic.CompilerServices;
 using Xunit;
+
+namespace CSharpBits.Test.ToReaderMonad.Step1
+{
+}
 
 namespace CSharpBits.Test.ManualReaderMonad
 {
