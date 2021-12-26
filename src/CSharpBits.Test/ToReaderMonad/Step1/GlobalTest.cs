@@ -4,11 +4,11 @@ using Xunit;
 
 namespace CSharpBits.Test.ToReaderMonad.Step1
 {
-    using Env = String;
+    using Password = String;
 
     static class Environment
     {
-        internal static Env Env { get; set; }
+        internal static Password Password { get; set; }
     }
 
     class A
@@ -32,7 +32,7 @@ namespace CSharpBits.Test.ToReaderMonad.Step1
     {
         internal string Third()
         {
-            var env = Environment.Env;
+            var env = Environment.Password;
             return $"C's result using Env={env}";
         }
     }
@@ -42,7 +42,7 @@ namespace CSharpBits.Test.ToReaderMonad.Step1
         [Fact]
         void making_an_environment_parameter_available_via_a_static_global()
         {
-            Environment.Env = "some-password";
+            Environment.Password = "some-password";
 
             var result = new A().DoSomething();
 

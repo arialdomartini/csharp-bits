@@ -3,10 +3,6 @@ using CSharpBits.Test.ReaderMonad;
 using FluentAssertions;
 using Xunit;
 
-namespace CSharpBits.Test.ToReaderMonad.Step1
-{
-}
-
 namespace CSharpBits.Test.ManualReaderMonad
 {
     using Env = Int32;
