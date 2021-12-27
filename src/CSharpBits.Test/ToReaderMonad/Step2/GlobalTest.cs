@@ -20,10 +20,11 @@ namespace CSharpBits.Test.ToReaderMonad.Step2
             _b = b;
         }
 
-        internal string DoSomething()
+        internal string Greet(string name)
         {
-            var bResult = _b.Second();
-            return $"A's result + {bResult}";
+            var greeting = $"Hi {name}";
+            _b.Process(greeting);
+            return greeting;
         }
     }
 
@@ -36,10 +37,10 @@ namespace CSharpBits.Test.ToReaderMonad.Step2
             _c = c;
         }
 
-        internal string Second()
+        internal string Process(string s)
         {
-            var cResult = _c.Third();
-            return $"B's result + {cResult}";
+            var ss = s.ToLower();
+            return ss + _c.Third();
         }
     }
 
@@ -62,6 +63,9 @@ namespace CSharpBits.Test.ToReaderMonad.Step2
 
     public class GlobalTest
     {
+
+
+
         [Fact]
         void making_an_environment_parameter_via_Dependency_Injection()
         {
@@ -71,7 +75,7 @@ namespace CSharpBits.Test.ToReaderMonad.Step2
             var b = new B(c);
             var a = new A(b);
 
-            var result = a.DoSomething();
+            var result = a.Greet("Mario");
 
             result.Should().Be("A's result + B's result + C's result using Env=some-password");
         }
