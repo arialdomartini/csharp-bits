@@ -6,10 +6,36 @@ namespace CSharpBits.Test.ReaderMonad
 {
     using Env = Int32;
 
+    class Ffunc<A, B>
+    {
+        private readonly Func<A, B> _f;
+
+        public Ffunc(Func<A, B> f)
+        {
+            _f = f;
+        }
+
+        public static implicit operator Ffunc<A, B>(Func<A,B> value) =>
+            new Ffunc<A, B>(value);
+
+        public static implicit operator Func<A, B>(Ffunc<A, B> value) =>
+            value._f;
+
+        public B Run(A a) =>
+            _f(a);
+
+        // public static Ffunc<A, C> operator +(Ffunc<A, B> f, Ffunc<B, C> g) =>
+        //     new Ffunc<A, C>(a =>
+        //     {
+        //         return g(f._f(a));
+        //     });
+    }
+
     internal static class FuncExtension
     {
         internal static Func<A, C> Then<A, B, C>(this Func<A, B> f, Func<B, C> g) =>
             a => g(f(a));
+
     }
 
     class Reader<TEnv, TResult>
