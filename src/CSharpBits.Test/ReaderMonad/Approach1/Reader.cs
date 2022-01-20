@@ -2,7 +2,7 @@
 using FluentAssertions;
 using Xunit;
 
-namespace CSharpBits.Test.ReaderMonad
+namespace CSharpBits.Test.ReaderMonad.Approach1
 {
     using Env = Int32;
 
@@ -83,7 +83,7 @@ namespace CSharpBits.Test.ReaderMonad
             a => b => f(a, b);
     }
 
-    internal static class LinqExtensions
+    internal static class OtherLinqExtensions
     {
         internal static Reader<E, B> Select<E, A, B>(this Reader<E, A> reader, Func<A, B> f) =>
             reader.Map(f);

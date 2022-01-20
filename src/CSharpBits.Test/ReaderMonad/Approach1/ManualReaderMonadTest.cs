@@ -1,9 +1,8 @@
 ﻿using System;
-using CSharpBits.Test.ReaderMonad;
 using FluentAssertions;
 using Xunit;
 
-namespace CSharpBits.Test.ManualReaderMonad
+namespace CSharpBits.Test.ReaderMonad.Approach1
 {
     using Env = Int32;
 
