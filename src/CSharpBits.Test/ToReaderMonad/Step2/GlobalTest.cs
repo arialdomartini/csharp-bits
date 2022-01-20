@@ -23,8 +23,7 @@ namespace CSharpBits.Test.ToReaderMonad.Step2
         internal string Greet(string name)
         {
             var greeting = $"Hi {name}";
-            _b.Process(greeting);
-            return greeting;
+            return _b.Process(greeting);
         }
     }
 
@@ -39,8 +38,7 @@ namespace CSharpBits.Test.ToReaderMonad.Step2
 
         internal string Process(string s)
         {
-            var ss = s.ToLower();
-            return ss + _c.Third();
+            return $"{s.ToLower()} + {_c.Third()}";
         }
     }
 
@@ -63,9 +61,6 @@ namespace CSharpBits.Test.ToReaderMonad.Step2
 
     public class GlobalTest
     {
-
-
-
         [Fact]
         void making_an_environment_parameter_via_Dependency_Injection()
         {
@@ -77,7 +72,7 @@ namespace CSharpBits.Test.ToReaderMonad.Step2
 
             var result = a.Greet("Mario");
 
-            result.Should().Be("A's result + B's result + C's result using Env=some-password");
+            Assert.Equal("hi mario + C's result using Env=some-password", result);
         }
     }
 }

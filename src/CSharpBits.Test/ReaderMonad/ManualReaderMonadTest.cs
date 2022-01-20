@@ -92,7 +92,7 @@ namespace CSharpBits.Test.ManualReaderMonad
                     .Bind(curriedSecond)
                     .Run(42);
 
-            result.Should().Be("i'm greeting mario while Env=42");
+            result.Should().Be("I'M GREETING MARIO WHILE ENV=42");
         }
 
         [Fact]
