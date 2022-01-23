@@ -5,14 +5,39 @@ using System.Linq;
 using FluentAssertions;
 using Xunit;
 using static System.Environment;
+using static CSharpBits.Test.EnumerableDependencyInjectionHelper;
 using static CSharpBits.Test.TestHelper;
 
 namespace CSharpBits.Test
 {
+    class EnumerableDependencyInjectionHelper
+    {
+        internal static IEnumerable<T> DisguiseAsIEnumerable<T, A, B>(Func<A, B> f) =>
+            f.DisguiseAsIEnumerable<T, A, B>();
+    }
     static class EnumerableDependencyInjection
     {
+        class EnumerableException<A, B>: Exception
+        {
+            internal Func<A, B> Function { get; set; }
+        }
+
         internal static void Execute<T>(this IEnumerable<T> enumerable) =>
             enumerable.Aggregate((_, v) => v);
+
+
+        internal static B Execute<T, A, B>(this IEnumerable<T> enumerable, A argument)
+        {
+            try
+            {
+                enumerable.Aggregate((_, v) => v);
+                return default; // this is unreachable code
+            }
+            catch (EnumerableException<A,B> e)
+            {
+                return e.Function(argument);
+            }
+        }
 
         internal static IEnumerable<T> DisguiseAsIEnumerable<T>(this Action a)
         {
@@ -24,6 +49,20 @@ namespace CSharpBits.Test
 
             return arbitraryCode();
         }
+
+        internal static IEnumerable<T> DisguiseAsIEnumerable<T, A, B>(this Func<A, B> f)
+        {
+            IEnumerable<T> arbitraryCode()
+            {
+                yield return default(T);
+                f.Throw();
+            }
+
+            return arbitraryCode();
+        }
+
+        private static void Throw<A, B>(this Func<A, B> f) =>
+            throw new EnumerableException<A, B> { Function = f };
     }
 
     public class DependencyInjectionViaIEnumerable
@@ -41,7 +80,7 @@ namespace CSharpBits.Test
 
 
         [Fact]
-        void dependency_injection_with_IEnumerable()
+        void dependency_injection_of_an_action_with_IEnumerable()
         {
             var writer = new StringWriter();
             Console.SetOut(writer);
@@ -59,6 +98,35 @@ namespace CSharpBits.Test
 
             Assert.Equal($"It worked{NewLine}", writer.GetStringBuilder().ToString());
         }
+
+        class MyTargetClass2
+        {
+            private readonly IEnumerable<decimal> _dependency;
+
+            internal MyTargetClass2(IEnumerable<decimal> dependency) =>
+                _dependency = dependency;
+
+            internal int SomeMethod(string argument) =>
+                _dependency.Execute<decimal, string, int>(argument);
+        }
+
+        [Fact]
+        void dependency_injection_of_a_function_with_IEnumerable()
+        {
+            int ToBeInjected(string s)
+            {
+                return s.Length;
+            }
+
+            IEnumerable<decimal> decimals =
+                DisguiseAsIEnumerable<decimal, string, int>(ToBeInjected);
+
+            var result = new MyTargetClass2(decimals)
+                .SomeMethod("abc");
+
+            Assert.Equal(3, result);
+        }
+
     }
 
 
