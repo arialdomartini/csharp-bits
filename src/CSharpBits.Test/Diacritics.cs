@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using FsCheck.Xunit;
@@ -214,7 +212,6 @@ namespace CSharpBits.Test
 
             new string(removeNotAllowed.ToArray()).Should().Be(expected);
         }
-
     }
 
 
@@ -225,10 +222,19 @@ namespace CSharpBits.Test
             return s.Where(IsAllowed);
         }
 
+
         internal static bool IsAllowed(char c)
         {
             return Regex.IsMatch(c.ToString(), @"[a-zA-Z0-9\s\-]");
         }
+
+        private static string RemoveNotAllowed(this string s)
+        {
+            return Regex.Replace(s, @"[^a-zA-Z0-9\s\-]", "");
+        }
+
+        private static string RemoveControl(this string s) =>
+            Regex.Replace(s, @"[\u0000-\u001F]", string.Empty);
 
         internal static string WithConvertedSpecialCases(this string text)
         {
@@ -257,7 +263,32 @@ namespace CSharpBits.Test
 
                 ["ß"] = "ss",
 
-                ["_"] = "-"
+                ["_"] = "-",
+                ["ç"] = "c",
+                ["Ç"] = "C",
+                ["Ë"] = "E",
+                ["ë"] = "e",
+                ["ñ"] = "n",
+                ["Ñ"] = "N",
+                ["Õ"] = "O",
+                ["õ"] = "o",
+                ["à"] = "a",
+                ["è"] = "e",
+                ["é"] = "e",
+                ["Ï"] = "I",
+                ["ï"] = "i",
+
+                ["ì"] = "i",
+                ["ò"] = "o",
+                ["ù"] = "u",
+                ["À"] = "A",
+                ["Ê"] = "E",
+                ["ê"] = "e",
+                ["È"] = "E",
+                ["É"] = "E",
+                ["Ì"] = "I",
+                ["Ò"] = "O",
+                ["Ù"] = "U"
             };
 
             return
@@ -268,15 +299,11 @@ namespace CSharpBits.Test
         {
             if (string.IsNullOrEmpty(text)) return text;
 
-
             return
-                new string(
-                    text
-                        .WithConvertedSpecialCases()
-                        .Normalize(NormalizationForm.FormD)
-                        .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-                        .RemoveNotAllowed()
-                        .ToArray());
+                text
+                    .WithConvertedSpecialCases()
+                    .RemoveControl()
+                    .RemoveNotAllowed();
         }
     }
 }
