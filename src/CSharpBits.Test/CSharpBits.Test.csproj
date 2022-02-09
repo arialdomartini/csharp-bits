@@ -7,6 +7,7 @@
     <ItemGroup>
         <PackageReference Include="Autofac" Version="5.1.2" />
         <PackageReference Include="FluentAssertions" Version="5.6.0" />
+        <PackageReference Include="FsCheck.Xunit" Version="2.16.4" />
         <PackageReference Include="Grpc.Tools" Version="2.26.0" />
         <PackageReference Include="Pie.Monads" Version="1.0.5" />
         <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
