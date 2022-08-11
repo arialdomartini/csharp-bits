@@ -1,15 +1,14 @@
 ﻿using System;
-using FluentAssertions;
 using FsCheck;
 using FsCheck.Xunit;
-using Xunit;
 using static FsCheck.Prop;
 
 namespace CSharpBits.Test
 {
     public class YCombinator
     {
-        private readonly Arbitrary<int> PositiveNumbers = Arb.From(Gen.Choose(0, 15_000));
+        // Notice! We had to reduce the max recursive depth. Why?
+        private readonly Arbitrary<int> PositiveNumbers = Arb.From(Gen.Choose(0, 8_000));
 
         private delegate int Sum(int n);
         private delegate Sum PartSum(Sum continuation);
@@ -27,10 +26,11 @@ namespace CSharpBits.Test
         // By definition, Y(f) is a correct sum. So we can replace ad_hoc_implementation with it, and
         // feed it to PartSum
         
-        // This does not work in C#, causing a Stack Overflow, because C# is strict, not lazy
+        // Replacing the eager evaluation with a lambda makes this works with C# too
         private static readonly Func<PartSum, Sum> Y = 
-            f => 
-                f(Y(f));
+            f =>
+                n =>
+                    f(Y(f))(n);
 
         // private static readonly Sum sum = mkSum(ad_hoc_continuation);
         private static readonly Sum sum = Y(mkSum);
