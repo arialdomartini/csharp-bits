@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System;
+using FluentAssertions;
 using FsCheck;
 using FsCheck.Xunit;
 using Xunit;
@@ -18,11 +19,21 @@ namespace CSharpBits.Test
                 n =>
                     n == 0 ? 0 : n + continuation(n - 1);
         
-        private static readonly Sum ad_hoc_continuation = n => n * (n + 1) / 2;
+        // This is replaced by Y(f)
+        // private static readonly Sum ad_hoc_continuation = n => n * (n + 1) / 2;
+
+
+        // A function that given a PartSum returns a Sum.
+        // By definition, Y(f) is a correct sum. So we can replace ad_hoc_implementation with it, and
+        // feed it to PartSum
         
-        // Note: order does matter! To make it order-independent, use
-        // private static readonly Sum sum = n => mkSum(ad_hoc_continuation)(n);
-        private static readonly Sum sum = mkSum(ad_hoc_continuation);
+        // This does not work in C#, causing a Stack Overflow, because C# is strict, not lazy
+        private static readonly Func<PartSum, Sum> Y = 
+            f => 
+                f(Y(f));
+
+        // private static readonly Sum sum = mkSum(ad_hoc_continuation);
+        private static readonly Sum sum = Y(mkSum);
         
         [Property]
         Property it_meets_the_gauss_formula() =>
