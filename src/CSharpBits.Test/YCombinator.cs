@@ -1,4 +1,5 @@
-﻿using FsCheck;
+﻿using System;
+using FsCheck;
 using FsCheck.Xunit;
 using static FsCheck.Prop;
 
@@ -9,24 +10,22 @@ namespace CSharpBits.Test
         private readonly Arbitrary<int> PositiveNumbers = Arb.From(Gen.Choose(0, 8_000));
 
         private delegate int Sum(int n);
+
         private delegate Sum MkSum(MkSum mkSum);
 
         private static readonly MkSum mkSum =
             self =>
-            {
-                // This will not work in C#, because it's not a lazy language 
-                // var f = self(self);
-                // We have to make it lazy inhibiting the eager evaluation with a lambda
-                Sum f = x => self(self)(x);
-                return n => 
-                    n == 0 ? 0 : n + f(n - 1);
-            };
+                new Func<Sum, Sum>(
+                        f =>
+                            n =>
+                                n == 0 ? 0 : n + f(n - 1))
+                    (i => self(self)(i));
 
-        private static readonly Sum sum = 
-            n => 
+        private static readonly Sum sum =
+            n =>
                 mkSum(mkSum)(n);
-        
-        
+
+
         [Property]
         Property it_meets_the_gauss_formula() =>
             ForAll(PositiveNumbers, n =>
