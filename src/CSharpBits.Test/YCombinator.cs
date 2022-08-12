@@ -13,11 +13,11 @@ namespace CSharpBits.Test
 
         private static readonly MkSum mkSum =
             self =>
-                n =>
-                {
-                    var f = self(self);
-                    return n == 0 ? 0 : n + f(n - 1);
-                };
+            {
+                var f = self(self);
+                return n => 
+                    n == 0 ? 0 : n + f(n - 1);
+            };
 
         private static readonly Sum sum = 
             n => 
