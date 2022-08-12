@@ -14,7 +14,10 @@ namespace CSharpBits.Test
         private static readonly MkSum mkSum =
             self =>
             {
-                var f = self(self);
+                // This will not work in C#, because it's not a lazy language 
+                // var f = self(self);
+                // We have to make it lazy inhibiting the eager evaluation with a lambda
+                Sum f = x => self(self)(x);
                 return n => 
                     n == 0 ? 0 : n + f(n - 1);
             };
