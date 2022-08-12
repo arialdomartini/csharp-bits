@@ -13,13 +13,14 @@ namespace CSharpBits.Test
 
         private delegate Sum MkSum(MkSum mkSum);
 
+        private static readonly Func<Sum, Sum> mySum = 
+            f =>
+                i =>
+                    i == 0 ? 0 : i + f(i - 1);
+        
         private static readonly MkSum mkSum =
             self =>
-                new Func<Sum, Sum>(
-                        f =>
-                            n =>
-                                n == 0 ? 0 : n + f(n - 1))
-                    (i => self(self)(i));
+                mySum(i => self(self)(i));
 
         private static readonly Sum sum =
             n =>
