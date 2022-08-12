@@ -24,7 +24,7 @@ namespace CSharpBits.Test
 
         private static readonly Sum sum =
             n =>
-                mkSum(mkSum)(n);
+                new Func<MkSum, Sum>(p => p(p))(mkSum)(n);
 
 
         [Property]
