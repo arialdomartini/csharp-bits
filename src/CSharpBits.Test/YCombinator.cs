@@ -10,21 +10,17 @@ namespace CSharpBits.Test
         private readonly Arbitrary<int> PositiveNumbers = Arb.From(Gen.Choose(0, 8_000));
 
         private delegate int Sum(int n);
-
         private delegate Sum MkSum(MkSum mkSum);
 
         private static readonly Func<Sum, Sum> mySum = 
             f =>
                 i =>
                     i == 0 ? 0 : i + f(i - 1);
-        
-        private static readonly MkSum mkSum =
-            self =>
-                mySum(i => self(self)(i));
 
         private static readonly Sum sum =
             n =>
-                new Func<MkSum, Sum>(p => p(p))(mkSum)(n);
+                new Func<MkSum, Sum>(p => p(p))(self =>
+                    mySum(i => self(self)(i)))(n);
 
 
         [Property]
