@@ -14,8 +14,14 @@ namespace CSharpBits.Test
         private delegate Sum Rec(Rec rec);
         
         private static readonly Sum sum =
+            Y(mkSum);
+
+        private static Sum Y(Func<Sum, Sum> f) =>
+            f(Y(mkSum));
+
+        private static Sum mkSum(Sum f) =>
             i =>
-                i == 0 ? 0 : i + sum(i - 1);
+                i == 0 ? 0 : i + f(i - 1);
 
         [Property]
         Property it_meets_the_gauss_formula() =>
