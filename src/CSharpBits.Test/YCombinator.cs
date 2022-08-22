@@ -18,13 +18,13 @@ namespace CSharpBits.Test
 
         private static Sum Y(Func<Sum, Sum> f)
         {
-            Sum sub()
+            Sum sub(Rec self)
             {
-                var sum = sub();
+                var sum = self(self);
                 return f(sum);
             }
 
-            return sub();
+            return sub(sub);
         }
 
         private static Sum mkSum(Sum f) =>
