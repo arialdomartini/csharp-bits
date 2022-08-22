@@ -23,7 +23,7 @@ namespace CSharpBits.Test
                 return f(i => self(self)(i));
             }
 
-            return sub(sub);
+            return new Func<Rec, Sum>(f => f(f))(sub);
         }
 
         private static Sum mkSum(Sum f) =>
