@@ -20,7 +20,7 @@ namespace CSharpBits.Test
         {
             Sum sub()
             {
-                var sum = Y(mkSum);
+                var sum = sub();
                 return f(sum);
             }
 
