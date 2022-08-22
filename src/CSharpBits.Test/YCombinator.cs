@@ -20,7 +20,7 @@ namespace CSharpBits.Test
         {
             Sum sub(Rec self)
             {
-                var sum = self(self);
+                Sum sum = i => self(self)(i);
                 return f(sum);
             }
 
