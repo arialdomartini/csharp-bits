@@ -20,8 +20,7 @@ namespace CSharpBits.Test
         {
             Sum sub(Rec self)
             {
-                Sum sum = i => self(self)(i);
-                return f(sum);
+                return f(i => self(self)(i));
             }
 
             return sub(sub);
