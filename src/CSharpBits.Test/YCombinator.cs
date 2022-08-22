@@ -9,27 +9,19 @@ namespace CSharpBits.Test
     {
         private readonly Arbitrary<int> PositiveNumbers = Arb.From(Gen.Choose(0, 8_000));
 
-        private delegate int Sum(int n);
+        private delegate int Sum(int i);
+        private delegate Sum MkSum(Sum f);
+        private delegate Sum Rec(Rec rec);
+        
+        private static readonly Sum sum =
+            Y(mkSum);
 
-        private delegate Sum MkSum(MkSum mkSum);
+        private static Sum Y(Func<Sum, Sum> f) =>
+            new Func<Rec, Sum>(f => f(f))(self => f(i => self(self)(i)));
 
-        private delegate Sum SumC(Sum sum);
-
-        private static readonly SumC mySum =
-            f =>
-                i =>
-                    i == 0 ? 0 : i + f(i - 1);
-
-        private static readonly Func<SumC, Sum> Y =
-            f =>
-                n =>
-                    new Func<MkSum, Sum>(p => p(p))(
-                        self =>
-                            f(i => 
-                                self(self)(i)))(n);
-
-        private static readonly Sum sum = Y(mySum);
-
+        private static Sum mkSum(Sum f) =>
+            i =>
+                i == 0 ? 0 : i + f(i - 1);
 
         [Property]
         Property it_meets_the_gauss_formula() =>
