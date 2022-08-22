@@ -13,7 +13,7 @@ namespace CSharpBits.Test
         private delegate Sum MkSum(Sum f);
         private delegate Sum Rec(Rec rec);
         
-        private static readonly Func<int, int> sum =
+        private static readonly Sum sum =
             i =>
                 i == 0 ? 0 : i + sum(i - 1);
 
