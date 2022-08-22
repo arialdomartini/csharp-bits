@@ -9,6 +9,10 @@ namespace CSharpBits.Test
     {
         private readonly Arbitrary<int> PositiveNumbers = Arb.From(Gen.Choose(0, 8_000));
 
+        private delegate int Sum(int i);
+        private delegate Sum MkSum(Sum f);
+        private delegate Sum Rec(Rec rec);
+        
         private static readonly Func<int, int> sum =
             i =>
                 i == 0 ? 0 : i + sum(i - 1);
