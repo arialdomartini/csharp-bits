@@ -16,15 +16,8 @@ namespace CSharpBits.Test
         private static readonly Sum sum =
             Y(mkSum);
 
-        private static Sum Y(Func<Sum, Sum> f)
-        {
-            Sum sub(Rec self)
-            {
-                return f(i => self(self)(i));
-            }
-
-            return new Func<Rec, Sum>(f => f(f))(sub);
-        }
+        private static Sum Y(Func<Sum, Sum> f) =>
+            new Func<Rec, Sum>(f => f(f))(self => f(i => self(self)(i)));
 
         private static Sum mkSum(Sum f) =>
             i =>
