@@ -55,7 +55,7 @@ namespace CSharpBits.Test.LikeMediatR.Notifications
         }
         
         [Fact]
-        async void use_ping_without_composite()
+        void use_ping_without_composite()
         {
             var handlers = _scope.Resolve<IEnumerable<IPingNotificationHandler>>();
             
