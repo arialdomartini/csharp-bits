@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
 using FluentAssertions;
-using MediatR;
 using Xunit;
 
 namespace CSharpBits.Test.LikeMediatR.Notifications
@@ -54,6 +53,17 @@ namespace CSharpBits.Test.LikeMediatR.Notifications
             messages.Should().Contain("one");
             messages.Should().Contain("two");
         }
+        
+        [Fact]
+        async void use_ping_without_composite()
+        {
+            var handlers = _scope.Resolve<IEnumerable<IPingNotificationHandler>>();
+            
+            handlers.Run(async h => await h.Ping());
+
+            messages.Should().Contain("one");
+            messages.Should().Contain("two");
+        }
 
         internal static readonly List<string> messages = new();
     }
@@ -94,5 +104,14 @@ namespace CSharpBits.Test.LikeMediatR.Notifications
     internal interface IPingNotificationHandler
     {
         Task Ping();
+    }
+
+    internal static class CompositionExtensions
+    {
+        internal static void Run(
+            this IEnumerable<IPingNotificationHandler> handlers, 
+            Action<IPingNotificationHandler> action) =>
+            
+            handlers.ToList().ForEach(action);
     }
 }
