@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,7 +7,7 @@ using Autofac;
 using MediatR;
 using Xunit;
 
-namespace CSharpBits.Test.LikeMediatR.Ping
+namespace CSharpBits.Test.LikeMediatR.Streams
 {
     public class With : IDisposable
     {
@@ -37,10 +38,10 @@ namespace CSharpBits.Test.LikeMediatR.Ping
 
             builder
                 .Register<ServiceFactory>(context =>
-                    {
-                        var c = context.Resolve<IComponentContext>();
-                        return t => c.Resolve(t);
-                    });
+                {
+                    var c = context.Resolve<IComponentContext>();
+                    return t => c.Resolve(t);
+                });
 
             builder
                 .RegisterAssemblyTypes(typeof(PingHandler).GetTypeInfo().Assembly).AsImplementedInterfaces();
@@ -50,23 +51,40 @@ namespace CSharpBits.Test.LikeMediatR.Ping
         }
 
         [Fact]
-        async void use_ping()
+        async void use_ping_stream()
         {
             var mediator = _scope.Resolve<IMediator>();
 
-            var result = await mediator.Send(new Ping());
-            
-            Assert.Equal("Pong", result);
+            IAsyncEnumerable<Pong> stream = mediator.CreateStream(new StreamPing{Message = "Hey!"});
+
+            var i = 1;
+            await foreach (var value in stream)
+            {
+                Assert.Equal($"Hey! Pong {i}", value.Message);
+                i++;
+            }
         }
     }
-    
-    // Cannot be internal; can be nested
-    public class Ping : IRequest<string>{}
 
-    // Can be internal
-    internal class PingHandler : IRequestHandler<Ping, string>
+    class PingHandler :
+        IStreamRequestHandler<StreamPing, Pong>
     {
-        Task<string> IRequestHandler<Ping, string>.Handle(Ping request, CancellationToken cancellationToken) =>
-            Task.FromResult("Pong");
+        async IAsyncEnumerable<Pong> IStreamRequestHandler<StreamPing, Pong>.Handle(StreamPing ping, CancellationToken cancellationToken)
+        {
+            yield return await Task.Run(() => new Pong { Message = $"{ping.Message} Pong 1"}, cancellationToken);
+            yield return await Task.Run(() => new Pong { Message = $"{ping.Message} Pong 2"}, cancellationToken);
+            yield return await Task.Run(() => new Pong { Message = $"{ping.Message} Pong 3"}, cancellationToken);
+        }
+    }
+
+    public class StreamPing : IStreamRequest<Pong>
+    {
+        public string Message { get; set; }
+    }
+
+    public class Pong 
+    {
+        public string Message { get; set; }
+        
     }
 }

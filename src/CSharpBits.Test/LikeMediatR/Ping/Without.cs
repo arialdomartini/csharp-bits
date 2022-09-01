@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Autofac;
 using Xunit;
 
-namespace CSharpBits.Test.LikeMediatR.With
+namespace CSharpBits.Test.LikeMediatR.Ping
 {
     public class Without : IDisposable
     {
@@ -30,9 +31,9 @@ namespace CSharpBits.Test.LikeMediatR.With
         {
             var handler = _scope.Resolve<IPingHandler>();
             
-            var result = await handler.Ping();
+            var result = await handler.Ping("foobar");
             
-            Assert.Equal("Pong", result);
+            Assert.Equal("foobar Pong", result);
         }
         
         [Fact]
@@ -40,10 +41,11 @@ namespace CSharpBits.Test.LikeMediatR.With
         {
             var handler = _scope.Resolve<IPingHandler>();
             
-            var result = await handler.Handle(new PingRequest());
+            var result = await handler.Handle(new PingRequest {Message = "foobar"});
             
-            Assert.Equal("Pong", result);
+            Assert.Equal("foobar Pong", result);
         }
+        
         
         void IDisposable.Dispose()
         {
@@ -54,18 +56,21 @@ namespace CSharpBits.Test.LikeMediatR.With
 
     internal class PlainPingHandler : IPingHandler 
     {
-        Task<string> IPingHandler.Ping() =>
-            Task.FromResult("Pong");
+        Task<string> IPingHandler.Ping(string message) =>
+            Task.FromResult($"{message} Pong");
 
         Task<string> IPingHandler.Handle(PingRequest ping) =>
-            Task.FromResult("Pong");
+            Task.FromResult($"{ping.Message} Pong");
     }
 
     internal interface IPingHandler
     {
-        Task<string> Ping();
+        Task<string> Ping(string message);
         Task<string> Handle(PingRequest ping);
     }
 
-    internal class PingRequest { }
+    internal class PingRequest
+    {
+        internal string Message { get; set; }
+    }
 }
