@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using Autofac;
 using FluentAssertions;
 using Xunit;
-using static CSharpBits.Test.LikeMediatR.PublishStrategies.AsyncContinueOnException.Without;
+using static CSharpBits.Test.LikeMediatR.PublishStrategies.ParallelNoWait.Without;
 
-namespace CSharpBits.Test.LikeMediatR.PublishStrategies.AsyncContinueOnException
+namespace CSharpBits.Test.LikeMediatR.PublishStrategies.ParallelNoWait
 {
     public class Without : IDisposable
     {
@@ -44,19 +44,10 @@ namespace CSharpBits.Test.LikeMediatR.PublishStrategies.AsyncContinueOnException
         {
             var pingHandlers = _scope.Resolve<IEnumerable<IPingHandler>>();
 
-            try
-            {
-                await pingHandlers.RunContinueOnException(h => h.Ping());
+            await pingHandlers.RunNoWait(h => h.Ping());
 
-                true.Should().BeFalse();
-            }
-            catch (AggregateException a)
-            {
-                a.InnerExceptions[0].Message.Should().Be("Intentionally failing");
-
-                Messages.Should().Contain("one");
-                Messages.Should().Contain("two");
-            }
+            Messages.Should().Contain("one");
+            Messages.Should().Contain("two");
         }
 
         internal static readonly List<string> Messages = new();
@@ -87,18 +78,11 @@ namespace CSharpBits.Test.LikeMediatR.PublishStrategies.AsyncContinueOnException
 
     internal static class CompositionExtensions
     {
-        internal static async Task RunContinueOnException<T>(this IEnumerable<T> handlers, Func<T, Task> action)
+        internal static Task RunNoWait<T>(this IEnumerable<T> handlers, Func<T, Task> action)
         {
-            var whenAll = Task.WhenAll(handlers.Select(action));
+            handlers.Select(action).ToList();
 
-            try
-            {
-                await whenAll;
-            }
-            catch
-            {
-                throw whenAll.Exception;    
-            }
+            return Task.CompletedTask;
         }
     }
 }
