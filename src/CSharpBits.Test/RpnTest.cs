@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+
 namespace CSharpBits.Test;
 
 public class RpnTest
@@ -11,7 +12,7 @@ public class RpnTest
     {
         Assert.Equal(5, "2 3 +".Eval());
     }
-    
+
     [Fact]
     void calculates_series_of_sums()
     {
@@ -29,26 +30,20 @@ internal static class RpnCalculator
         ["/"] = (a, b) => a / b
     };
 
-    internal static double Eval(this string rawInput)
-    {
-        Func<IEnumerable<double>, string, IEnumerable<double>> aggregator = (acc, i) => 
-            Operations.ContainsKey(i) ?
-                EvalOperation(acc, Operations[i]) : 
-                acc.Append(double.Parse(i));
-
-        return rawInput
+    internal static double Eval(this string rawInput) =>
+        rawInput
             .Tokenize()
-            .Aggregate(new List<double>(), aggregator)
+            .Aggregate(
+                Array.Empty<double>(), (
+                    Func<double[], string, double[]>)((acc, i) =>
+                    Operations.ContainsKey(i) ? 
+                        EvalOperation(acc, Operations[i]) : 
+                        acc.Append(double.Parse(i)).ToArray()))
             .Max();
-    }
 
-    private static IEnumerable<double> EvalOperation(IEnumerable<double> acc, Func<double, double, double> operation)
-    {
-        var v1 = acc.First();
-        var v2 = acc.Skip(1).First();
-        return acc.Skip(2).Append(operation(v1, v2));
-    }
+    private static double[] EvalOperation(double[] acc, Func<double, double, double> operation) =>
+        acc.Skip(2).Append(operation(acc[0], acc[1])).ToArray();
 
-    internal static IEnumerable<string> Tokenize(this string rawInput) =>
+    private static IEnumerable<string> Tokenize(this string rawInput) =>
         rawInput.Split(" ");
 }
