@@ -37,8 +37,7 @@ namespace CSharpBits.Test
 
             Assert.Equal(100, id(100));
 
-            Assert.Equal(NotAFunctor<int>.Return(100).Count, idM(NotAFunctor<int>.Return(100)).Count);
-            // Assert.Equal(NotAFunctor<int>.Return(100), idM(NotAFunctor<int>.Return(100)));
+            Assert.NotEqual(NotAFunctor<int>.Return(100).Count, idM(NotAFunctor<int>.Return(100)).Count);
         }
 
         [Fact]

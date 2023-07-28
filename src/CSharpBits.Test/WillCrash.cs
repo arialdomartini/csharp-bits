@@ -6,7 +6,7 @@ namespace CSharpBits.Test
 {
     public class WillCrash
     {
-        [Fact]
+        [Fact(Skip = "This would intentionally crash!")]
         void does_crash()
         {
             var _ = new Foo();
