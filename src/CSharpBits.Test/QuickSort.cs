@@ -1,11 +1,11 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using FsCheck;
 using Xunit;
 using static System.Array;
+
+ 
+delegate bool Predicate(int i);
 
 public class QuickSortTest
 {
@@ -31,6 +31,7 @@ public class QuickSortTest
         Assert.Equal(new[] { 1, 2, 3 }, new[] { 3, 2, 1 }.sorted());
         Assert.Equal(new[] { 1, 2, 3, 10,33 }, new[] { 10, 33, 3, 2, 1 }.sorted());
     }
+    
 }
 
 internal static class QuickSort
@@ -49,18 +50,22 @@ internal static class QuickSort
             .Concat(bigger.sorted());
     }
 
+    
     private static IEnumerable<int> Concat(this IEnumerable<int> list, int element) => 
         list.Concat(new [] { element });
 
     private static (IEnumerable<int>, IEnumerable<int>)
-        Partition(this IEnumerable<int> xs, Func<int, bool> predicate)
-    {
-        var matches = xs.Where(predicate);
-        var doesNotMatches = xs.Where(x => !predicate(x));
-        return (matches, doesNotMatches);
-    }
-    
-    
+        Partition(this IEnumerable<int> xs, Predicate predicate) =>
+        
+        (xs.FilterOn(predicate), 
+         xs.FilterOn(InverseOf(predicate)));
+
+    private static Predicate InverseOf(Predicate predicate) => 
+        i => !(predicate(i));
+
+    private static IEnumerable<int> FilterOn(this IEnumerable<int> xs, Predicate predicate) =>
+        xs.Where(x => predicate(x));
+
     private static IEnumerable<int> SmallerThan(this IEnumerable<int> rest, int pivot) => 
         SubSetOn(rest, x => x < pivot);
 
