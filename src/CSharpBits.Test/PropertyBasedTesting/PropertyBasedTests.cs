@@ -1,13 +1,11 @@
 ﻿using System.Linq;
-using Xunit;
-
-namespace CSharpBits.Test;
-
 using FsCheck;
 using FsCheck.Xunit;
-using static FsCheck.Prop;
+using Xunit;
 
-public class PropertyTesting
+namespace CSharpBits.Test.PropertyBasedTesting;
+
+public class PropertyBasedTests
 {
     [Property]
     Property square_of_numbers_are_non_negative()
@@ -18,7 +16,7 @@ public class PropertyTesting
 
         bool squareIsNotNegative(int n) => square(n) >= 0;
 
-        return ForAll(numbers, squareIsNotNegative);
+        return Prop.ForAll(numbers, squareIsNotNegative);
     }
 
     [Fact]
@@ -30,7 +28,7 @@ public class PropertyTesting
 
         bool squareIsNotNegative(int n) => square(n) >= 0;
 
-        Property property = ForAll(numbers, squareIsNotNegative);
+        Property property = Prop.ForAll(numbers, squareIsNotNegative);
         
         Check.QuickThrowOnFailure(property);
     }
@@ -48,5 +46,5 @@ public class PropertyTesting
     
     [Property]
     Property square_of_numbers_are_non_negative_one_liner() => 
-        ForAll(Arb.From<int>(), n => n * n >= 0);
+        Prop.ForAll(Arb.From<int>(), n => n * n >= 0);
 }
