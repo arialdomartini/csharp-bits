@@ -22,7 +22,7 @@ enum Category
 
 record Promotion(string Name, DateTime ValidFrom, DateTime ValidTo);
 
-record Product(string Name, decimal price, Category category);
+record Product(string Name, decimal price, Category Category);
 
 enum Country
 {
@@ -62,6 +62,8 @@ public class ProductPropertyTests
         from category in Arb.Generate<Category>().Where(isFood)
         select new Product(name, price, category);
 
+    private Gen<Product> d = Arb.Generate<Product>().Where(p => p.Category == Category.Books);
+    
     
     bool Ship(Product product, Country country, Promotion promotions)
     {
