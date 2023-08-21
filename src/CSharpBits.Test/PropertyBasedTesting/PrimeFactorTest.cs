@@ -56,4 +56,14 @@ public class PrimeFactorTest
 
         return Prop.ForAll(PositiveNumbers, isFactorizedInPrimeNumbers);
     }
+    
+    [Property]
+    bool boolean_factorization_in_prime_numbers(PositiveInt positiveNumber)
+    {
+        var n = positiveNumber.Item;
+        
+        var factors = factorize(n);
+        
+        return factors.AreAllPrime() && factors.Multiplied() == n;
+    }
 }
