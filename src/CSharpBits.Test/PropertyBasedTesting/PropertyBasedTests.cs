@@ -43,6 +43,11 @@ public class PropertyBasedTests
         Assert.Equal(100, ns.Count);
         Assert.True(ns.TrueForAll(n => n <= 50));
     }
+
+    void Foo(string a, int b, double c)
+    {
+        
+    }
     
     [Property]
     Property square_of_numbers_are_non_negative_one_liner() => 
