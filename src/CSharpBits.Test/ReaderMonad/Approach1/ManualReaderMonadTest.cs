@@ -2,118 +2,117 @@
 using FluentAssertions;
 using Xunit;
 
-namespace CSharpBits.Test.ReaderMonad.Approach1
+namespace CSharpBits.Test.ReaderMonad.Approach1;
+
+using Env = Int32;
+
+file static class ReaderExtensions
 {
-    using Env = Int32;
+    internal static Func<A, Func<B, C>> Curried<A, B, C>(this Func<A, B, C> f) =>
+        a => b => f(a, b);
 
-    internal static class ReaderExtensions
+    internal static A Run<E, A>(this Func<E, A> reader, E env) =>
+        reader(env);
+
+    internal static Func<E, B> Map<E, A, B>(this Func<E, A> reader, Func<A, B> f) =>
+        env => f(reader.Run(env));
+
+    internal static Func<E, B> Bind<E, A, B>(this Func<E, A> reader, Func<A, Func<E, B>> f) =>
+        env => f(reader(env)).Run(env);
+}
+
+internal static class LinqExtensions
+{
+    internal static Func<E, C> SelectMany<E, A, B, C>(
+        this Func<E, A> reader,
+        Func<A, Func<E, B>> bind,
+        Func<A, B, C> project) =>
+        env =>
+        {
+            A a = reader.Run(env);
+            Func<E, B> func = bind(a);
+            B b = func(env);
+            var c = project(a, b);
+            return c;
+        };
+}
+
+public class ManualReaderMonadTest
+{
+    string Greet(string name, Env env) =>
+        $"I'm greeting {name} while Env={env}";
+
+    [Fact]
+    void run_a_function()
     {
-        internal static Func<A, Func<B, C>> Curried<A, B, C>(this Func<A, B, C> f) =>
-            a => b => f(a, b);
+        Func<string, Env, string> func = Greet;
 
-        internal static A Run<E, A>(this Func<E, A> reader, E env) =>
-            reader(env);
+        var greet = func.Curried();
 
-        internal static Func<E, B> Map<E, A, B>(this Func<E, A> reader, Func<A, B> f) =>
-            env => f(reader.Run(env));
+        var applied = greet("Mario");
 
-        internal static Func<E, B> Bind<E, A, B>(this Func<E, A> reader, Func<A, Func<E, B>> f) =>
-            env => f(reader(env)).Run(env);
+        var result = applied.Run(42);
+
+        result.Should().Be("I'm greeting Mario while Env=42");
     }
 
-    internal static class LinqExtensions
+    [Fact]
+    void apply_a_function_to_a_function_like_functor_map()
     {
-        internal static Func<E, C> SelectMany<E, A, B, C>(
-            this Func<E, A> reader,
-            Func<A, Func<E, B>> bind,
-            Func<A, B, C> project) =>
-            env =>
-            {
-                A a = reader.Run(env);
-                Func<E, B> func = bind(a);
-                B b = func(env);
-                var c = project(a, b);
-                return c;
-            };
+        string ToLower(string s) =>
+            s.ToLower();
+
+        Func<string, int, string> func = Greet;
+        var greet = func.Curried();
+
+        var result =
+            greet("Mario")
+                .Map(ToLower)
+                .Run(42);
+
+        result.Should().Be("i'm greeting mario while env=42");
     }
 
-    public class ManualReaderMonadTest
+    [Fact]
+    void bind_a_function()
     {
-        string Greet(string name, Env env) =>
-            $"I'm greeting {name} while Env={env}";
+        string Second(string s, Env env) =>
+            env > 42 ? s.ToLower() : s.ToUpper();
 
-        [Fact]
-        void run_a_function()
-        {
-            Func<string, Env, string> func = Greet;
+        Func<string, Env, string> second = Second;
 
-            var greet = func.Curried();
+        var curriedSecond = second.curried();
 
-            var applied = greet("Mario");
+        Func<string, int, string> func = Greet;
+        var greet = func.Curried();
 
-            var result = applied.Run(42);
+        var result =
+            greet("Mario")
+                .Bind(curriedSecond)
+                .Run(42);
 
-            result.Should().Be("I'm greeting Mario while Env=42");
-        }
+        result.Should().Be("I'M GREETING MARIO WHILE ENV=42");
+    }
 
-        [Fact]
-        void apply_a_function_to_a_function_like_functor_map()
-        {
-            string ToLower(string s) =>
-                s.ToLower();
+    [Fact]
+    void using_linq()
+    {
+        string Second(string s, Env env) =>
+            env > 42 ?  s.ToUpper() : s.ToLower();
 
-            Func<string, int, string> func = Greet;
-            var greet = func.Curried();
+        Func<string, Env, string> second = Second;
 
-            var result =
-                greet("Mario")
-                    .Map(ToLower)
-                    .Run(42);
+        var curriedSecond = second.curried();
 
-            result.Should().Be("i'm greeting mario while env=42");
-        }
+        Func<string, int, string> func = Greet;
+        var greet = func.Curried();
 
-        [Fact]
-        void bind_a_function()
-        {
-            string Second(string s, Env env) =>
-                env > 42 ? s.ToLower() : s.ToUpper();
+        var result =
+            from x in greet("Mario")
+            from y in curriedSecond(x)
+            select $"{y}!!";
 
-            Func<string, Env, string> second = Second;
-
-            var curriedSecond = second.curried();
-
-            Func<string, int, string> func = Greet;
-            var greet = func.Curried();
-
-            var result =
-                greet("Mario")
-                    .Bind(curriedSecond)
-                    .Run(42);
-
-            result.Should().Be("I'M GREETING MARIO WHILE ENV=42");
-        }
-
-        [Fact]
-        void using_linq()
-        {
-            string Second(string s, Env env) =>
-                env > 42 ?  s.ToUpper() : s.ToLower();
-
-            Func<string, Env, string> second = Second;
-
-            var curriedSecond = second.curried();
-
-            Func<string, int, string> func = Greet;
-            var greet = func.Curried();
-
-            var result =
-                from x in greet("Mario")
-                from y in curriedSecond(x)
-                select $"{y}!!";
-
-            result.Run(42)
-                .Should().Be("i'm greeting mario while env=42!!");
-        }
+        result.Run(42)
+            .Should().Be("i'm greeting mario while env=42!!");
     }
 }

@@ -1,150 +1,149 @@
 ﻿using System;
 using Xunit;
 
-namespace CSharpBits.Test.ReaderMonad.Approach1.ConnectionStringExample
+namespace CSharpBits.Test.ReaderMonad.Approach1.ConnectionStringExample;
+
+public class ConnectionStringTest
 {
-    public class ConnectionStringTest
+    [Fact]
+    void monadic_connection_string()
     {
-        [Fact]
-        void monadic_connection_string()
+        Reader<E, T> Reader<E, T>(Func<E, T> f) =>
+            f.ToReader();
+
+        Func<string, Reader<String, int>> readAge = name =>
+            Reader<String, int>(conn => 40);
+
+        Func<int, Reader<String, string>> readDrink = age =>
+            Reader<String, string>(age => "beer");
+
+        Func<string, string> give = drink =>
+            $"Hey! Here's your {drink}!";
+
+        Func<string, Reader<String, string>> serve = name =>
+            readAge(name)
+                .Bind(age => readDrink(age))
+                .Map(drink => give(drink));
+
+        Func<string, Reader<String, string>> serveLinq = name =>
+            from age in readAge(name)
+            from drink in readDrink(age)
+            select give(drink);
+
+        serve("Mario")
+            .Run("sqlite:some.db");
+    }
+
+    [Fact]
+    void non_monadic_connection_string()
+    {
+        Func<string, String, int> readAge = (name, conn) =>
+            40;
+
+        Func<int, String, string> readDrink = (age, conn) =>
+            "beer";
+
+        Func<string, string> give = drink =>
+            $"Hey! Here's your {drink}!";
+
+        Func<string, String, string> serve = (name, conn) =>
         {
-            Reader<E, T> Reader<E, T>(Func<E, T> f) =>
-                f.ToReader();
+            var age = readAge(name, conn);
+            var drink = readDrink(age, conn);
+            var greeting = give(drink);
+            return greeting;
+        };
 
-            Func<string, Reader<String, int>> readAge = name =>
-                Reader<String, int>(conn => 40);
+        Func<string, String, string> fluentServe = (name, conn) =>
+            give(
+                readDrink(
+                    readAge(name, conn), conn));
 
-            Func<int, Reader<String, string>> readDrink = age =>
-                Reader<String, string>(age => "beer");
+        serve("Mario", "sqlite:some.db");
+    }
 
-            Func<string, string> give = drink =>
-                $"Hey! Here's your {drink}!";
+    class AgeRepository
+    {
+        private readonly String _conn;
 
-            Func<string, Reader<String, string>> serve = name =>
-                readAge(name)
-                    .Bind(age => readDrink(age))
-                    .Map(drink => give(drink));
-
-            Func<string, Reader<String, string>> serveLinq = name =>
-                from age in readAge(name)
-                from drink in readDrink(age)
-                select give(drink);
-
-            serve("Mario")
-                .Run("sqlite:some.db");
+        internal AgeRepository(String conn)
+        {
+            _conn = conn;
         }
 
-        [Fact]
-        void non_monadic_connection_string()
+        internal int ReadAge(string name) =>
+            40;
+    }
+
+    class DrinkRepository
+    {
+        private readonly string _conn;
+
+        internal DrinkRepository(String conn)
         {
-            Func<string, String, int> readAge = (name, conn) =>
-                40;
-
-            Func<int, String, string> readDrink = (age, conn) =>
-                "beer";
-
-            Func<string, string> give = drink =>
-                $"Hey! Here's your {drink}!";
-
-            Func<string, String, string> serve = (name, conn) =>
-            {
-                var age = readAge(name, conn);
-                var drink = readDrink(age, conn);
-                var greeting = give(drink);
-                return greeting;
-            };
-
-            Func<string, String, string> fluentServe = (name, conn) =>
-                give(
-                    readDrink(
-                        readAge(name, conn), conn));
-
-            serve("Mario", "sqlite:some.db");
+            _conn = conn;
         }
 
-        class AgeRepository
+        internal string ReadDrink(int age) =>
+            "beer";
+    }
+
+    [Fact]
+    void with_dependency_injection_connection_string()
+    {
+        String conn = "sqlite:some.db";
+        var ageRepo = new AgeRepository(conn);
+        var drinkRepo = new DrinkRepository(conn);
+
+        Func<string, string> give = drink =>
+            $"Hey! Here's your {drink}!";
+
+        Func<string, string> serve = name =>
         {
-            private readonly String _conn;
+            var age = ageRepo.ReadAge(name);
+            var drink = drinkRepo.ReadDrink(age);
+            var greeting = give(drink);
+            return greeting;
+        };
 
-            internal AgeRepository(String conn)
-            {
-                _conn = conn;
-            }
+        serve("Mario");
+    }
 
-            internal int ReadAge(string name) =>
-                40;
-        }
+    [Fact]
+    void made_fluent_with_dependency_injection_connection_string()
+    {
+        String conn = "sqlite:some.db";
+        var ageRepo = new AgeRepository(conn);
+        var drinkRepo = new DrinkRepository(conn);
 
-        class DrinkRepository
+        Func<string, int> getAge = ageRepo.ReadAge;
+        Func<int, string> getDrink = drinkRepo.ReadDrink;
+
+        Func<string, string> give = drink =>
+            $"Hey! Here's your {drink}!";
+
+        Func<string, string> serve = name =>
         {
-            private readonly string _conn;
+            var process =
+                getAge.Then(age =>
+                        getDrink(age))
+                    .Then(drink =>
+                        give(drink));
 
-            internal DrinkRepository(String conn)
-            {
-                _conn = conn;
-            }
+            return process(name);
+        };
 
-            internal string ReadDrink(int age) =>
-                "beer";
-        }
-
-        [Fact]
-        void with_dependency_injection_connection_string()
+        Func<string, string> servePointFree = name =>
         {
-            String conn = "sqlite:some.db";
-            var ageRepo = new AgeRepository(conn);
-            var drinkRepo = new DrinkRepository(conn);
+            var process =
+                getAge
+                    .Then(getDrink)
+                    .Then(give);
 
-            Func<string, string> give = drink =>
-                $"Hey! Here's your {drink}!";
+            return process(name);
+        };
 
-            Func<string, string> serve = name =>
-            {
-                var age = ageRepo.ReadAge(name);
-                var drink = drinkRepo.ReadDrink(age);
-                var greeting = give(drink);
-                return greeting;
-            };
-
-            serve("Mario");
-        }
-
-        [Fact]
-        void made_fluent_with_dependency_injection_connection_string()
-        {
-            String conn = "sqlite:some.db";
-            var ageRepo = new AgeRepository(conn);
-            var drinkRepo = new DrinkRepository(conn);
-
-            Func<string, int> getAge = ageRepo.ReadAge;
-            Func<int, string> getDrink = drinkRepo.ReadDrink;
-
-            Func<string, string> give = drink =>
-                $"Hey! Here's your {drink}!";
-
-            Func<string, string> serve = name =>
-            {
-                var process =
-                    getAge.Then(age =>
-                            getDrink(age))
-                        .Then(drink =>
-                            give(drink));
-
-                return process(name);
-            };
-
-            Func<string, string> servePointFree = name =>
-            {
-                var process =
-                    getAge
-                        .Then(getDrink)
-                        .Then(give);
-
-                return process(name);
-            };
-
-            serve("Mario");
-            servePointFree("Mario");
-        }
+        serve("Mario");
+        servePointFree("Mario");
     }
 }

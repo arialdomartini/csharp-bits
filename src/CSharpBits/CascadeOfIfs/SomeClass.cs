@@ -1,23 +1,22 @@
 ﻿using System.Collections.Generic;
 
-namespace CSharpBits.CascadeOfIfs
+namespace CSharpBits.CascadeOfIfs;
+
+internal class SomeClass
 {
-    internal class SomeClass
+    private readonly Check _check;
+    private readonly List<IOperation> _operations;
+
+    public SomeClass(Check check, List<IOperation> operations)
     {
-        private readonly Check _check;
-        private readonly List<IOperation> _operations;
+        _check = check;
+        _operations = operations;
+    }
 
-        public SomeClass(Check check, List<IOperation> operations)
-        {
-            _check = check;
-            _operations = operations;
-        }
-
-        internal HResult SomeFunction()
-        {
-            return _operations
-                .ChainTogether(_check)
-                .Execute();
-        }
+    internal HResult SomeFunction()
+    {
+        return _operations
+            .ChainTogether(_check)
+            .Execute();
     }
 }

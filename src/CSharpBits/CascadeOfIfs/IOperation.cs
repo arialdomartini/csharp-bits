@@ -1,8 +1,7 @@
-namespace CSharpBits.CascadeOfIfs
+namespace CSharpBits.CascadeOfIfs;
+
+internal interface IOperation
 {
-    internal interface IOperation
-    {
-        string DoJob();
-        HResult ErrorCode { get; }
-    }
+    string DoJob();
+    HResult ErrorCode { get; }
 }

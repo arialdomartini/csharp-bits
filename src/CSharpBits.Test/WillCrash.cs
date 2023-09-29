@@ -2,15 +2,14 @@
 using IWillCrash;
 using Xunit;
 
-namespace CSharpBits.Test
+namespace CSharpBits.Test;
+
+public class WillCrash
 {
-    public class WillCrash
+    [Fact(Skip = "This would intentionally crash!")]
+    void does_crash()
     {
-        [Fact(Skip = "This would intentionally crash!")]
-        void does_crash()
-        {
-            var _ = new Foo();
-            true.Should().BeTrue();
-        }
+        var _ = new Foo();
+        true.Should().BeTrue();
     }
 }

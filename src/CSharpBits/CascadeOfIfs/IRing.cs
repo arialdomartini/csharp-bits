@@ -1,7 +1,6 @@
-namespace CSharpBits.CascadeOfIfs
+namespace CSharpBits.CascadeOfIfs;
+
+internal interface IRing
 {
-    internal interface IRing
-    {
-        HResult Execute();
-    }
+    HResult Execute();
 }

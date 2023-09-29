@@ -1,11 +1,10 @@
-namespace CSharpBits.CascadeOfIfs
-{
-    internal class Operation1 : IOperation {
-        public string DoJob()
-        {
-            return "operation1 result";
-        }
+namespace CSharpBits.CascadeOfIfs;
 
-        public HResult ErrorCode => HResult.Operation1Failed;
+internal class Operation1 : IOperation {
+    public string DoJob()
+    {
+        return "operation1 result";
     }
+
+    public HResult ErrorCode => HResult.Operation1Failed;
 }

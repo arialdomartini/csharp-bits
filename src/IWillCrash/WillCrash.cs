@@ -1,6 +1,5 @@
-﻿namespace IWillCrash
+﻿namespace IWillCrash;
+
+public class Foo
 {
-    public class Foo
-    {
-    }
 }

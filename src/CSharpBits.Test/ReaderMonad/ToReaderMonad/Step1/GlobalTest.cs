@@ -2,51 +2,50 @@
 using FluentAssertions;
 using Xunit;
 
-namespace CSharpBits.Test.ReaderMonad.ToReaderMonad.Step1
+namespace CSharpBits.Test.ReaderMonad.ToReaderMonad.Step1;
+
+using Password = String;
+
+static class Environment
 {
-    using Password = String;
+    internal static Password Password { get; set; }
+}
 
-    static class Environment
+class A
+{
+    internal string DoSomething()
     {
-        internal static Password Password { get; set; }
+        var bResult = new B().Second();
+        return $"A's result + {bResult}";
     }
+}
 
-    class A
+class B
+{
+    internal string Second()
     {
-        internal string DoSomething()
-        {
-            var bResult = new B().Second();
-            return $"A's result + {bResult}";
-        }
+        var cResult = new C().Third();
+        return $"B's result + {cResult}";
     }
-
-    class B
+}
+class C
+{
+    internal string Third()
     {
-        internal string Second()
-        {
-            var cResult = new C().Third();
-            return $"B's result + {cResult}";
-        }
+        var env = Environment.Password;
+        return $"C's result using Env={env}";
     }
-    class C
+}
+
+public class GlobalTest
+{
+    [Fact]
+    void making_an_environment_parameter_available_via_a_static_global()
     {
-        internal string Third()
-        {
-            var env = Environment.Password;
-            return $"C's result using Env={env}";
-        }
-    }
+        Environment.Password = "some-password";
 
-    public class GlobalTest
-    {
-        [Fact]
-        void making_an_environment_parameter_available_via_a_static_global()
-        {
-            Environment.Password = "some-password";
+        var result = new A().DoSomething();
 
-            var result = new A().DoSomething();
-
-            result.Should().Be("A's result + B's result + C's result using Env=some-password");
-        }
+        result.Should().Be("A's result + B's result + C's result using Env=some-password");
     }
 }

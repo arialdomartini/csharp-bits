@@ -1,11 +1,10 @@
-namespace CSharpBits.CascadeOfIfs
+namespace CSharpBits.CascadeOfIfs;
+
+internal enum HResult
 {
-    internal enum HResult
-    {
-        Operation1Failed,
-        Operation2Failed,
-        Operation3Failed,
-        Operation4Failed,
-        Ok
-    }
+    Operation1Failed,
+    Operation2Failed,
+    Operation3Failed,
+    Operation4Failed,
+    Ok
 }

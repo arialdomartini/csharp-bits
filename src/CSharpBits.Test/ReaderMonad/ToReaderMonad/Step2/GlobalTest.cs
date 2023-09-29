@@ -1,77 +1,76 @@
 ﻿using System;
 using Xunit;
 
-namespace CSharpBits.Test.ReaderMonad.ToReaderMonad.Step2
+namespace CSharpBits.Test.ReaderMonad.ToReaderMonad.Step2;
+
+using Password = String;
+
+class Environment
 {
-    using Password = String;
+    internal Password Password { get; set; }
+}
 
-    class Environment
+class A
+{
+    private readonly B _b;
+
+    internal A(B b)
     {
-        internal Password Password { get; set; }
+        _b = b;
     }
 
-    class A
+    internal string Greet(string name)
     {
-        private readonly B _b;
+        var greeting = $"Hi {name}";
+        return _b.Process(greeting);
+    }
+}
 
-        internal A(B b)
-        {
-            _b = b;
-        }
+class B
+{
+    private readonly C _c;
 
-        internal string Greet(string name)
-        {
-            var greeting = $"Hi {name}";
-            return _b.Process(greeting);
-        }
+    internal B(C c)
+    {
+        _c = c;
     }
 
-    class B
+    internal string Process(string s)
     {
-        private readonly C _c;
+        return $"{s.ToLower()} + {_c.Third()}";
+    }
+}
 
-        internal B(C c)
-        {
-            _c = c;
-        }
+class C
+{
+    private readonly Environment _environment;
 
-        internal string Process(string s)
-        {
-            return $"{s.ToLower()} + {_c.Third()}";
-        }
+    public C(Environment environment)
+    {
+        _environment = environment;
     }
 
-    class C
+    internal string Third()
     {
-        private readonly Environment _environment;
+        var password = _environment.Password;
 
-        public C(Environment environment)
-        {
-            _environment = environment;
-        }
-
-        internal string Third()
-        {
-            var password = _environment.Password;
-
-            return $"C's result using Env={password}";
-        }
+        return $"C's result using Env={password}";
     }
+}
 
-    public class GlobalTest
+public class GlobalTest
+{
+    [Fact]
+    void making_an_environment_parameter_via_Dependency_Injection()
     {
-        [Fact]
-        void making_an_environment_parameter_via_Dependency_Injection()
-        {
-            // Wire components
-            var environment = new Environment { Password = "some-password" };
-            var c = new C(environment); // Inject Environment
-            var b = new B(c);
-            var a = new A(b);
+        // Wire components
+        var environment = new Environment { Password = "some-password" };
+        var c = new C(environment); // Inject Environment
+        var b = new B(c);
+        var a = new A(b);
 
-            var result = a.Greet("Mario");
+        var result = a.Greet("Mario");
 
-            Assert.Equal("hi mario + C's result using Env=some-password", result);
-        }
+        Assert.Equal("hi mario + C's result using Env=some-password", result);
     }
 }

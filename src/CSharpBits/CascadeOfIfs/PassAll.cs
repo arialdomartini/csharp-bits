@@ -1,7 +1,6 @@
-namespace CSharpBits.CascadeOfIfs
+namespace CSharpBits.CascadeOfIfs;
+
+internal class PassAll : IRing
 {
-    internal class PassAll : IRing
-    {
-        public HResult Execute() => HResult.Ok;
-    }
+    public HResult Execute() => HResult.Ok;
 }
