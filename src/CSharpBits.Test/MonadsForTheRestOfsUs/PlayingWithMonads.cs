@@ -23,12 +23,11 @@ class IOMonad<T>
     }
 }
 
-record IO<B>(B value, Action action)
+public record IO<B>(Func<B> action)
 {
     internal B Run()
     {
-        action.Invoke();
-        return value;
+        return action.Invoke();
     }
 }
 
@@ -56,7 +55,7 @@ public class PlayingWithMonads
     {
         File.Delete("output.txt");
     }
-    
+
     int MyLength(string s)
     {
         return s.Length;
@@ -86,11 +85,11 @@ public class PlayingWithMonads
         string a = "foo";
 
         B apply<A, B>(Func<A, B> f, A a) => f(a);
-        
+
         int length = apply(f, a);
         Assert.Equal(3, length);
     }
-    
+
     [Fact]
     void apply_for_linking_functions()
     {
@@ -102,7 +101,7 @@ public class PlayingWithMonads
         string a = "foo";
 
         var doubleTheLength = Apply(Double, Apply(Length, "foo"));
-        
+
         Assert.Equal(6, doubleTheLength);
     }
 
@@ -110,19 +109,19 @@ public class PlayingWithMonads
     void compose_in_terms_of_apply()
     {
         B Apply<A, B>(Func<A, B> f, A a) => f(a);
-        
+
         Func<A, C> Compose<A, B, C>(Func<B, C> g, Func<A, B> f) => a => Apply(g, Apply(f, a));
-        
+
         int Length(string s) => s.Length;
         double Double(int i) => i * 2;
 
         Func<string, double> composed = Compose<string, int, double>(Double, Length);
-        
+
         var doubleTheLength = composed("foo");
-        
+
         Assert.Equal(6, doubleTheLength);
     }
-    
+
     [Fact]
     void simple_function_composition()
     {
@@ -155,14 +154,14 @@ public class PlayingWithMonads
         Func<int, decimal> halfOf = n => (decimal)n / 2;
 
         Func<string, decimal> compose(Func<int, decimal> halfOf, Func<string, int> length) => s => halfOf(length(s));
-        
+
         var halfOfLength = compose(halfOf, length);
-        
+
         var halfTheLength = halfOfLength("foo");
 
         Assert.Equal(1.5M, halfTheLength);
     }
-    
+
     [Fact]
     void general_simple_function_composition_with_HOF()
     {
@@ -170,14 +169,14 @@ public class PlayingWithMonads
         Func<int, decimal> halfOf = n => (decimal)n / 2;
 
         Func<A, C> compose<A, B, C>(Func<B, C> g, Func<A, B> f) => s => g(f(s));
-        
+
         var halfOfLength = compose(halfOf, length);
-        
+
         var halfTheLength = halfOfLength("foo");
 
         Assert.Equal(1.5M, halfTheLength);
     }
-    
+
     [Fact]
     void dishonest_function()
     {
@@ -190,7 +189,7 @@ public class PlayingWithMonads
 
         Assert.Equal(43, closure(1));
     }
-    
+
     [Fact]
     void dishonest_function_with_string()
     {
@@ -203,7 +202,7 @@ public class PlayingWithMonads
 
         Assert.Equal(7, Closure("foo"));
     }
-    
+
     [Fact]
     void dishonest_division()
     {
@@ -214,24 +213,152 @@ public class PlayingWithMonads
 
         Assert.Throws<DivideByZeroException>(() => Divide(9M, 0M));
     }
-    
+
     [Fact]
     void run_monadic_function()
     {
         IO<int> CalculateWithSideEffect(string s) =>
             new(
-                s.Length,
-                () => File.WriteAllText("output.txt", "I'm a side effect!"));
-        
+                () =>
+                {
+                    File.WriteAllText("output.txt", "I'm a side effect!");
+                    return s.Length;
+                });
+
         IO<int> monadicValue = CalculateWithSideEffect("foo");
-        
+
         Assert.False(File.Exists("output.txt"));
-        
+
         var result = monadicValue.Run();
 
         Assert.Equal(3, result);
         Assert.Equal("I'm a side effect!", File.ReadAllText("output.txt"));
     }
+
+    [Fact]
+    void binding_IO_monadic_functions()
+    {
+        IO<int> LengthWithSideEffect(string s) =>
+            new IO<int>(
+                () =>
+                {
+                    File.WriteAllText("output.txt", "I'm a side effect!");
+                    return s.Length;
+                });
+
+        IO<double> DoubleWithSideEffect(int n) =>
+            new IO<double>(
+                () =>
+                {
+                    File.AppendAllText("output.txt", "I'm another side effect!");
+                    return n * 2;
+                });
+
+
+        IO<B> Apply<A, B>(Func<A, IO<B>> f, IO<A> a) => new(() =>
+        {
+            A aResult = a.Run();
+            IO<B> bResult = f(aResult);
+            return bResult.Run();
+        });
+
+        IO<string> Return(string s) => new(() => s);
+
+        var apply = Apply(LengthWithSideEffect, Return("foo"));
+
+        IO<double> monadicResult = Apply(DoubleWithSideEffect, apply);
+        // Indeed, no file has been created yet
+
+        Assert.False(File.Exists("output.txt"));
+
+
+        var result = monadicResult.Run();
+
+        Assert.Equal(3*2, result);
+
+        Assert.Equal("I'm a side effect!I'm another side effect!", File.ReadAllText("output.txt"));
+    }
+    
+    [Fact]
+    void composing_IO_monadic_functions()
+    {
+        IO<int> LengthWithSideEffect(string s) =>
+            new IO<int>(
+                () =>
+                {
+                    File.WriteAllText("output.txt", "I'm a side effect!");
+                    return s.Length;
+                });
+
+        IO<double> DoubleWithSideEffect(int n) =>
+            new IO<double>(
+                () =>
+                {
+                    File.AppendAllText("output.txt", "I'm another side effect!");
+                    return n * 2;
+                });
+
+
+        IO<B> Apply<A, B>(Func<A, IO<B>> f, IO<A> a) => new(() =>
+        {
+            A aResult = a.Run();
+            IO<B> bResult = f(aResult);
+            return bResult.Run();
+        });
+
+        IO<A> Return<A>(A s) => new(() => s);
+
+        Func<A, IO<C>> Compose<A, B, C>(Func<B, IO<C>> g, Func<A, IO<B>> f)
+        {
+            return new Func<A, IO<C>>(a =>
+            {
+                IO<B> aa = Apply(f, Return(a));
+                IO<C> io = Apply(g, aa);
+                return io;
+            });
+        }
+
+        var composed = Compose<string, int, double>(DoubleWithSideEffect, LengthWithSideEffect);
+
+        IO<double> monadicResult = composed("foo");
+        
+        var result = monadicResult.Run();
+
+        Assert.Equal(3*2, result);
+        Assert.Equal("I'm a side effect!I'm another side effect!", File.ReadAllText("output.txt"));
+    }
+
+    [Fact]
+    void composing_IO_monadic_functions_with_linq()
+    {
+        IO<int> LengthWithSideEffect(string s) =>
+            new IO<int>(
+                () =>
+                {
+                    File.WriteAllText("output.txt", "I'm a side effect!");
+                    return s.Length;
+                });
+
+        IO<double> DoubleWithSideEffect(int n) =>
+            new IO<double>(
+                () =>
+                {
+                    File.AppendAllText("output.txt", "I'm another side effect!");
+                    return n * 2;
+                });
+
+
+        IO<double> monadicResult =
+            from l in LengthWithSideEffect("foo")
+            from d in DoubleWithSideEffect(l)
+            select d;
+        
+        var result = monadicResult.Run();
+
+        Assert.Equal(3*2, result);
+        Assert.Equal("I'm a side effect!I'm another side effect!", File.ReadAllText("output.txt"));
+    }
+
 
     [Fact]
     void bind_monadic_functions()
@@ -424,5 +551,40 @@ class NonDeterministic
     public IEnumerable<int> Run()
     {
         return _lengths;
+    }
+}
+
+public static class IOMonadExtensions
+{
+    public static IO<R> Select<T, R>(this IO<T> ioMonad, Func<T, R> selector)
+    {
+        return new IO<R>( () =>
+        {
+            var result = ioMonad.Run();
+            return selector(result);
+        });
+    }
+
+    public static IO<R> SelectMany<T, R>(this IO<T> ioMonad, Func<T, IO<R>> selector)
+    {
+        return new IO<R>(() =>
+        {
+            var result = ioMonad.Run();
+            return selector(result).Run();
+        });
+    }
+
+    public static IO<R> SelectMany<T, U, R>(
+        this IO<T> ioMonad,
+        Func<T, IO<U>> selector,
+        Func<T, U, R> resultSelector)
+    {
+        return new IO<R>(() =>
+        {
+            var result = ioMonad.Run();
+            var innerMonad = selector(result);
+            var innerResult = innerMonad.Run();
+            return resultSelector(result, innerResult);
+        });
     }
 }
