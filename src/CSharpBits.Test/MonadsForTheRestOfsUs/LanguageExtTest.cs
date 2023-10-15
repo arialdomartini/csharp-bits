@@ -22,14 +22,5 @@ public class LanguageExtTest
     {
         throw new Exception();
     }
-
-    [Fact]
-    void with_io()
-    {
-        Either<string, int> result =
-            from value1 in Computation1()
-            from value2 in Computation2(value1)
-            from value3 in Computation3(value2, value1)
-            select value2;
-    }
+    
 }

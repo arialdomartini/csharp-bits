@@ -105,11 +105,10 @@ public class IoMonadTest
             return s.Length;
         }
 
-        int Double(int i) => i * 2;
+        double Double(int i) => i * 2;
 
         var doubleTheLength = Double(CalculateWithSideEffect("foo"));
         
         Assert.Equal(6, doubleTheLength);
     }
-    
 }

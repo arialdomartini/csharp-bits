@@ -2,10 +2,44 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using CSharpBits.Test.ReaderMonad.ToReaderMonad.Step1;
 using Xunit;
 
 namespace CSharpBits.Test.MonadsForTheRestOfsUs;
+
+static class FunctionExtensions
+{
+    internal static B Apply<A, B>(this Func<A, B> f, A a) => f(a);
+
+    internal static Func<A, C> Compose<A, B, C>(this Func<B, C> g, Func<A, B> f) =>
+        a =>
+            g.Apply(f.Apply(a));
+
+
+    internal static Func<A, C> ComposedWith<A, B, C>(this Func<B, C> g, Func<A, B> f) => a => g(f(a));
+
+    internal static IO<B> Apply<A, B>(this Func<A, IO<B>> f, IO<A> a)
+        => new(() =>
+        {
+            IO<B> io = f(a.Run());
+            return io.Run();
+        });
+
+    internal static Func<A, IO<C>> ComposedWith<A, B, C>(this Func<B, IO<C>> g, Func<A, IO<B>> f) =>
+        a => g.Apply(f(a));
+
+    internal static Func<A, IO<C>> ComposedWith2<A, B, C>(this Func<B, IO<C>> g, Func<A, IO<B>> f)
+    {
+        return a =>
+        {
+            IO<B> ioB = f(a);
+            B b = ioB.Run();
+            IO<C> c = g(b);
+            return c;
+        };
+    }
+
+    internal static Nond<T> Return<T>(this IEnumerable<T> items) => new(items);
+}
 
 class IOMonad<T>
 {
@@ -47,6 +81,11 @@ class ReadMonad<Extra, Output>
     }
 }
 
+record Nond<T>(IEnumerable<T> Items)
+{
+    internal IEnumerable<T> Run() => Items;
+}
+
 public class PlayingWithMonads
 {
     internal static readonly IList<string> Logs = new List<string>();
@@ -84,11 +123,12 @@ public class PlayingWithMonads
 
         string a = "foo";
 
-        B apply<A, B>(Func<A, B> f, A a) => f(a);
+        B Apply<A, B>(Func<A, B> f, A a) => f(a);
 
-        int length = apply(f, a);
+        int length = Apply(f, a);
         Assert.Equal(3, length);
     }
+
 
     [Fact]
     void apply_for_linking_functions()
@@ -101,23 +141,6 @@ public class PlayingWithMonads
         string a = "foo";
 
         var doubleTheLength = Apply(Double, Apply(Length, "foo"));
-
-        Assert.Equal(6, doubleTheLength);
-    }
-
-    [Fact]
-    void compose_in_terms_of_apply()
-    {
-        B Apply<A, B>(Func<A, B> f, A a) => f(a);
-
-        Func<A, C> Compose<A, B, C>(Func<B, C> g, Func<A, B> f) => a => Apply(g, Apply(f, a));
-
-        int Length(string s) => s.Length;
-        double Double(int i) => i * 2;
-
-        Func<string, double> composed = Compose<string, int, double>(Double, Length);
-
-        var doubleTheLength = composed("foo");
 
         Assert.Equal(6, doubleTheLength);
     }
@@ -274,21 +297,20 @@ public class PlayingWithMonads
 
         var result = monadicResult.Run();
 
-        Assert.Equal(3*2, result);
+        Assert.Equal(3 * 2, result);
 
         Assert.Equal("I'm a side effect!I'm another side effect!", File.ReadAllText("output.txt"));
     }
-    
+
     [Fact]
     void composing_IO_monadic_functions()
     {
         IO<int> LengthWithSideEffect(string s) =>
-            new IO<int>(
-                () =>
-                {
-                    File.WriteAllText("output.txt", "I'm a side effect!");
-                    return s.Length;
-                });
+            new IO<int>(() =>
+            {
+                File.WriteAllText("output.txt", "I'm a side effect!");
+                return s.Length;
+            });
 
         IO<double> DoubleWithSideEffect(int n) =>
             new IO<double>(
@@ -321,10 +343,10 @@ public class PlayingWithMonads
         var composed = Compose<string, int, double>(DoubleWithSideEffect, LengthWithSideEffect);
 
         IO<double> monadicResult = composed("foo");
-        
+
         var result = monadicResult.Run();
 
-        Assert.Equal(3*2, result);
+        Assert.Equal(3 * 2, result);
         Assert.Equal("I'm a side effect!I'm another side effect!", File.ReadAllText("output.txt"));
     }
 
@@ -352,10 +374,10 @@ public class PlayingWithMonads
             from l in LengthWithSideEffect("foo")
             from d in DoubleWithSideEffect(l)
             select d;
-        
+
         var result = monadicResult.Run();
 
-        Assert.Equal(3*2, result);
+        Assert.Equal(3 * 2, result);
         Assert.Equal("I'm a side effect!I'm another side effect!", File.ReadAllText("output.txt"));
     }
 
@@ -397,6 +419,7 @@ public class PlayingWithMonads
     void reader_monad()
     {
         Func<string, int> myLength = s => s.Length;
+
         Func<string, ReadMonad<Guid, int>> myMonadicLength = s =>
             new ReadMonad<Guid, int>(guid =>
                 myLength(s)
@@ -449,9 +472,9 @@ public class PlayingWithMonads
     {
         int myPureLength(string s) => s.Length;
 
-        NonDeterministic myNoDeterministicLength(string s) => new(s.Length, s.Length + 1, 42);
+        Nond<int> myNoDeterministicLength(string s) => new(new[] { s.Length, s.Length + 1, 42 });
 
-        NonDeterministic noDeterministicLength = myNoDeterministicLength("foo");
+        Nond<int> noDeterministicLength = myNoDeterministicLength("foo");
 
         var values = noDeterministicLength.Run();
 
@@ -461,24 +484,24 @@ public class PlayingWithMonads
     [Fact]
     void combine_list_monad()
     {
-        NonDeterministic notDeterministicLength(string s) => new(s.Length, s.Length + 1, 42);
-        NonDeterministic notDeterministicMult(int i) => new(i * 2, i * 3);
+        Nond<int> notDeterministicLength(string s) => new(new[] { s.Length, s.Length + 1, 42 });
+        Nond<int> notDeterministicMult(int i) => new (new[] { i * 2, i * 3 });
 
-        // Func<string, NonDeterministic>
-        Func<string, NonDeterministic> bind(Func<int, NonDeterministic> after, Func<string, NonDeterministic> before)
+        // Func<string, NonDeterministic<int>>
+        Func<string, Nond<int>> bind(Func<int, Nond<int>> after, Func<string, Nond<int>> before)
         {
             return s =>
             {
                 IEnumerable<int> enumerable = before(s).Run();
                 IEnumerable<int> allResults = enumerable.Select(after).SelectMany(i => i.Run());
-                // IEnumerable<int> nonDeterministics = enumerable.SelectMany( i => after(i).Run());
-                return new NonDeterministic(allResults.ToArray());
+                // IEnumerable<int> NonDeterministic<int>s = enumerable.SelectMany( i => after(i).Run());
+                return new Nond<int>(allResults.ToArray());
             };
         }
 
         var combined = bind(notDeterministicMult, notDeterministicLength);
 
-        NonDeterministic noDeterministicLength = combined("foo");
+        Nond<int> noDeterministicLength = combined("foo");
 
         var values = noDeterministicLength.Run();
 
@@ -488,21 +511,46 @@ public class PlayingWithMonads
     [Fact]
     void apply_nonDetermisticValue_to_nonDeterministicFunction()
     {
-        NonDeterministic notDeterministicLength(string s) => new(s.Length, s.Length + 1, 42);
+        Nond<int> notDeterministicLength(string s) => new (new[] { s.Length, s.Length + 1, 42});
 
-        NonDeterministic nonDetLength = notDeterministicLength("foo");
+        Nond<int> nonDetLength = notDeterministicLength("foo");
 
-        NonDeterministic notDeterministicMult(int i) => new(i * 2, i * 3);
+        Nond<int> notDeterministicMult(int i) => new (new []{ i * 2, i * 3 });
 
-        NonDeterministic result = apply(nonDetLength, notDeterministicMult);
+        Nond<int> result = apply(nonDetLength, notDeterministicMult);
 
-        NonDeterministic apply(NonDeterministic nv, Func<int, NonDeterministic> f)
+        Nond<int> apply(Nond<int> nv, Func<int, Nond<int>> f)
         {
             IEnumerable<int> values = nv.Run();
-            IEnumerable<NonDeterministic> nonDeterministics = values.Select(f);
+            IEnumerable<Nond<int>> nonDeterministics = values.Select(f);
 
             IEnumerable<int> selectMany = nonDeterministics.SelectMany(i => i.Run());
-            return new NonDeterministic(selectMany.ToArray());
+            return new Nond<int>(selectMany.ToArray());
+        }
+
+        var values = result.Run();
+
+        Assert.Equal(new[] { 6, 9, 8, 12, 84, 126 }, values);
+    }
+
+    [Fact]
+    void knight_movement()
+    {
+        Nond<int> notDeterministicLength(string s) => new(new[] { s.Length, s.Length + 1, 42 });
+
+        Nond<int> nonDetLength = notDeterministicLength("foo");
+
+        Nond<int> notDeterministicMult(int i) => new(new[] { i * 2, i * 3 });
+
+        Nond<int> result = apply(nonDetLength, notDeterministicMult);
+
+        Nond<int> apply(Nond<int> nv, Func<int, Nond<int>> f)
+        {
+            IEnumerable<int> values = nv.Run();
+            IEnumerable<Nond<int>> nonDeterministics = values.Select(f);
+
+            IEnumerable<int> selectMany = nonDeterministics.SelectMany(i => i.Run());
+            return new Nond<int>(selectMany.ToArray());
         }
 
         var values = result.Run();
@@ -539,26 +587,11 @@ public class PlayingWithMonads
     }
 }
 
-class NonDeterministic
-{
-    private readonly int[] _lengths;
-
-    public NonDeterministic(params int[] lengths)
-    {
-        _lengths = lengths;
-    }
-
-    public IEnumerable<int> Run()
-    {
-        return _lengths;
-    }
-}
-
 public static class IOMonadExtensions
 {
     public static IO<R> Select<T, R>(this IO<T> ioMonad, Func<T, R> selector)
     {
-        return new IO<R>( () =>
+        return new IO<R>(() =>
         {
             var result = ioMonad.Run();
             return selector(result);
