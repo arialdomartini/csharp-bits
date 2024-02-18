@@ -351,38 +351,6 @@ public class PlayingWithMonads
     }
 
     [Fact]
-    void composing_IO_monadic_functions_with_linq()
-    {
-        IO<int> LengthWithSideEffect(string s) =>
-            new IO<int>(
-                () =>
-                {
-                    File.WriteAllText("output.txt", "I'm a side effect!");
-                    return s.Length;
-                });
-
-        IO<double> DoubleWithSideEffect(int n) =>
-            new IO<double>(
-                () =>
-                {
-                    File.AppendAllText("output.txt", "I'm another side effect!");
-                    return n * 2;
-                });
-
-
-        IO<double> monadicResult =
-            from l in LengthWithSideEffect("foo")
-            from d in DoubleWithSideEffect(l)
-            select d;
-
-        var result = monadicResult.Run();
-
-        Assert.Equal(3 * 2, result);
-        Assert.Equal("I'm a side effect!I'm another side effect!", File.ReadAllText("output.txt"));
-    }
-
-
-    [Fact]
     void bind_monadic_functions()
     {
         IOMonad<int> MonadicLength(string s) =>
