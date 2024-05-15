@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
-using FluentAssertions.Equivalency;
 using Xunit;
 
 #pragma warning disable CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
@@ -8,14 +7,21 @@ using Xunit;
 
 namespace CSharpBits.Test.StateMonad;
 
+interface Tree<T>
+{
+    internal record Leaf(T Value) : Tree<T>;
+    internal record Node(Tree<T> Left, Tree<T> Right) : Tree<T>;
+}
+
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 public class StateMonadTes2
 {
-    private Tree<string>.Node TreeWith3Leaves = new Tree<string>.Node(
-        new Tree<string>.Node(
-            new Tree<string>.Leaf("one"),
-            new Tree<string>.Leaf("two")),
-        new Tree<string>.Leaf("three"));
+    private Tree<string>.Node TreeWith3Leaves =
+        new(
+            new Tree<string>.Node(
+                new Tree<string>.Leaf("one"),
+                new Tree<string>.Leaf("two")),
+            new Tree<string>.Leaf("three"));
 
     private static Tree<(int, string)>.Node LabeledTree = new Tree<(int, string)>.Node(
         new Tree<(int, string)>.Node(
@@ -34,48 +40,29 @@ public class StateMonadTes2
         Assert.Equal(3, numberOfLeaves);
     }
 
-    private static int CountLeaves<t>(Tree<t> tree) =>
-        tree switch
-        {
-            Tree<t>.Leaf => 1,
-            Tree<t>.Node { Left: var left, Right: var right } => CountLeaves(left) + CountLeaves(right)
-//          Node node => countLeaves(node.Left) + countLeaves(node.Right)
-        };
-
     [Fact]
-    void relabel_tree()
+    void map_leaves()
     {
         Tree<string> tree = TreeWith3Leaves;
 
-        var (labelled, count) = relabel(tree)(1);
+        var mapped = Map<string, string>(x => x)(tree);
 
-        Assert.Equal(LabeledTree, labelled);
-        Assert.Equal(4, count);
+        Tree<string> expectedTree = TreeWith3Leaves;
+        
+        Assert.Equal(expectedTree, mapped);
     }
-    
-    Func<int, (Tree<(int, string)>, int)> relabel(Tree<string> tree) =>
-        counter =>
+
+    private Func<Tree<A>, Tree<B>> Map<A, B>(Func<A, B> func) =>
+        tree => tree switch
         {
-            return tree switch
-            {
-                Tree<string>.Leaf l => (new Tree<(int, string)>.Leaf((counter, l.Value)), counter + 1),
-                Tree<string>.Node node => RelableRecursively(node, counter)
-            };
+            Tree<A>.Leaf l => new Tree<B>.Leaf(func(l.Value)),
+            Tree<A>.Node l => new Tree<B>.Node(Left: Map(func)(l.Left), Right: Map(func)(l.Right))
         };
 
-    (Tree<(int, string)>, int) RelableRecursively(Tree<string>.Node node, int counter)
-    {
-        var (relabeledLeft, counterLeft) = relabel(node.Left)(counter);
-        var (relabeledRight, counterRight) = relabel(node.Right)(counterLeft);
-        return
-            (new Tree<(int, string)>.Node(Left: relabeledLeft, Right: relabeledRight), counterRight);
-    }
-}
-
-[SuppressMessage("ReSharper", "InconsistentNaming")]
-internal interface Tree<t>
-{
-    internal record Leaf(t Value) : Tree<t>;
-
-    internal record Node(Tree<t> Left, Tree<t> Right) : Tree<t>;
+    private int CountLeaves<T>(Tree<T> tree) =>
+        tree switch
+        {
+            Tree<T>.Leaf => 1,
+            Tree<T>.Node node => CountLeaves(node.Left) + CountLeaves(node.Right)
+        };
 }
