@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using FluentAssertions.Equivalency;
 using Xunit;
 
@@ -43,7 +44,7 @@ public class StateMonadTes2
                     new Tree<string>.Leaf("two")),
                 new Tree<string>.Leaf("three"));
 
-        var (labelled, count) = relabel(tree, 1);
+        var (labelled, count) = relabel(tree)(1);
 
         Tree<(int, string)> expected =
             new Tree<(int, string)>.Node(
@@ -55,22 +56,23 @@ public class StateMonadTes2
         Assert.Equal(expected, labelled);
         Assert.Equal(4, count);
     }
-
-    (Tree<(int, string)>, int) relabel(Tree<string> tree, int counter)
-    {
-        return tree switch
+    
+    Func<int, (Tree<(int, string)>, int)> relabel(Tree<string> tree) =>
+        counter =>
         {
-            Tree<string>.Leaf l => (new Tree<(int, string)>.Leaf((counter, l.Value)), counter + 1),
-            Tree<string>.Node node => goInside(node, counter)
+            return tree switch
+            {
+                Tree<string>.Leaf l => (new Tree<(int, string)>.Leaf((counter, l.Value)), counter + 1),
+                Tree<string>.Node node => RelableRecursively(node, counter)
+            };
         };
 
-        (Tree<(int, string)>, int) goInside(Tree<string>.Node node, int i0)
-        {
-            var (relabeledLeft, i1) = relabel(node.Left, i0);
-            var (relabeledRght, i2) = relabel(node.Right, i1);
-            return
-                (new Tree<(int, string)>.Node(Left: relabeledLeft, Right: relabeledRght), i2);
-        }
+    (Tree<(int, string)>, int) RelableRecursively(Tree<string>.Node node, int counter)
+    {
+        var (relabeledLeft, counterLeft) = relabel(node.Left)(counter);
+        var (relabeledRight, counterRight) = relabel(node.Right)(counterLeft);
+        return
+            (new Tree<(int, string)>.Node(Left: relabeledLeft, Right: relabeledRight), counterRight);
     }
 }
 
@@ -80,4 +82,22 @@ internal interface Tree<t>
     internal record Leaf(t Value) : Tree<t>;
 
     internal record Node(Tree<t> Left, Tree<t> Right) : Tree<t>;
+}
+
+internal record WithCounter<a>(Func<int, (a, int)> Apply);
+
+[SuppressMessage("ReSharper", "UnusedMember.Global")]
+[SuppressMessage("ReSharper", "InconsistentNaming")]
+internal static class WithCounterExtensions
+{
+    internal static
+        WithCounter<b> next<a, b>(this WithCounter<a> f, Func<a, WithCounter<b>> g)
+    {
+        return new WithCounter<b>(counter0 =>
+        {
+            var (r1, counter1) = f.Apply(counter0);
+            var (r2, counter2) = g(r1).Apply(counter1);
+            return (r2, counter2);
+        });
+    }
 }
