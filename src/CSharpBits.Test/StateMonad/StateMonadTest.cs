@@ -76,12 +76,12 @@ public class StateMonadTest
         Assert.Equal(expected, indexed);
     }
 
-    private static WithCounter IndexLeaves(Tree tree) => new(counter =>
+    private static WithCounter IndexLeaves(Tree tree) => 
         tree switch
         {
-            Leaf leaf => (ileaf(leaf.Value, counter), counter + 1),
-            Node node => Recurse(node, counter)
-        });
+            Leaf leaf => new(counter =>(ileaf(leaf.Value, counter), counter + 1)),
+            Node node => new(counter =>Recurse(node, counter))
+        };
 
     private static (ITree, int) Recurse(Node node, int counter)
     {
