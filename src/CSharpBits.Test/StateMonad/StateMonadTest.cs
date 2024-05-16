@@ -80,16 +80,19 @@ public class StateMonadTest
         tree switch
         {
             Leaf leaf => new(counter =>(ileaf(leaf.Value, counter), counter + 1)),
-            Node node => new(counter =>Recurse(node, counter))
+            Node node => Recurse(node)
         };
 
-    private static (ITree, int) Recurse(Node node, int counter)
+    private static WithCounter Recurse(Node node)
     {
-        WithCounter indexLeaves = IndexLeaves(node.Left);
-        var (iLeft, counterLeft) = indexLeaves.Run(counter);
-        var (iRight, counterRight) = IndexLeaves(node.Right).Run(counterLeft);
+        return new(counter =>
+        {
+            WithCounter indexLeaves = IndexLeaves(node.Left);
+            var (iLeft, counterLeft) = indexLeaves.Run(counter);
+            var (iRight, counterRight) = IndexLeaves(node.Right).Run(counterLeft);
         
-        return (inode(iLeft, iRight), counterRight);
+            return (inode(iLeft, iRight), counterRight);
+        });
     }
 
     private GTree<int> MapLeaves(GTree<string> tree, Func<string, int> func) =>
