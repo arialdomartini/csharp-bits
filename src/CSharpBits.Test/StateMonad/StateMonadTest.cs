@@ -1,108 +1,134 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using Xunit;
-using static CSharpBits.Test.StateMonad.LTree.LLeaf;
-using static CSharpBits.Test.StateMonad.LTree.LNode;
-using static CSharpBits.Test.StateMonad.Tree;
-using static CSharpBits.Test.StateMonad.Tree.Leaf;
-using static CSharpBits.Test.StateMonad.Tree.Node;
-using static CSharpBits.Test.StateMonad.WithCounterExtensions;
-
-#pragma warning disable CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
-#pragma warning disable CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive).
+using static CSharpBits.Test.StateMonad.Factories;
+using static CSharpBits.Test.StateMonad.GTree<string>;
 
 namespace CSharpBits.Test.StateMonad;
 
-interface Tree
+public class StateMonadTest
 {
-    internal record Leaf(String Value) : Tree
-    {
-        internal static Tree leaf(String value) => new Leaf(value);
-    }
-
-    internal record Node(Tree Left, Tree Right) : Tree
-    {
-        internal static Tree node(Tree l, Tree r) => new Node(l, r);
-    }
-}
-
-interface LTree
-{
-    internal record LLeaf(String Value, int Counter) : LTree
-    {
-        internal static LTree lLeaf(String value, int counter) => new LLeaf(value, counter);
-    };
-
-    internal record LNode(LTree Left, LTree Right) : LTree
-    {
-        internal static LTree lNode(LTree l, LTree r) => new LNode(l, r);
-    }
-}
-
-[SuppressMessage("ReSharper", "InconsistentNaming")]
-public class StateMonadTes2
-{
-    private Tree TreeWith3Leaves =
-        node(
-            node(
-                leaf("one"),
-                leaf("two")),
-            leaf("three"));
-
-    private static LTree _lTree =
-        lNode(
-            lNode(
-                lLeaf("one", 1),
-                lLeaf("two", 2)),
-            lLeaf("three", 3));
-
-
     [Fact]
-    void relabel_tree_leaves()
+    void count_leaves()
     {
-        Tree tree = TreeWith3Leaves;
+        var tree =
+            node(
+                node(
+                    leaf("one"),
+                    leaf("two")),
+                leaf("three"));
 
-        var relabled = Relabel(tree).Run(1).Item1;
+        var numberOfLeaves = CountLeaves(tree: tree);
 
-        Assert.Equal(_lTree, relabled);
+        Assert.Equal(3, numberOfLeaves);
     }
 
-    private WithCounter Relabel(Tree tree) =>
+    private int CountLeaves(Tree tree) =>
         tree switch
         {
-            Leaf leaf => new WithCounter(counter => (lLeaf(leaf.Value, counter), counter + 1)),
-            Node node => Recurse(node)
+            Tree.Leaf leaf => 1,
+            Tree.Node node => CountLeaves(node.Left) + CountLeaves(node.Right)
         };
 
-    private WithCounter RecurseManual(Node node) =>
-        new(counter =>
+    [Fact]
+    void map_leaves_tree_as_a_functor()
+    {
+        var tree =
+            gnode(
+                gnode(
+                    gleaf("one"),
+                    gleaf("two")),
+                gleaf("three"));
+
+
+        var mapped = MapLeaves(tree, s => s.Length());
+
+        var expected =
+            gnode(
+                gnode(
+                    gleaf(3),
+                    gleaf(3)),
+                gleaf(5));
+
+        Assert.Equal(expected, mapped);
+    }
+
+    [Fact]
+    void index_a_tree()
+    {
+        var tree =
+            node(
+                node(
+                    leaf("one"),
+                    leaf("two")),
+                leaf("three"));
+
+
+        ITree indexed = IndexLeaves(tree)(1).Item1;
+
+        var expected =
+            inode(
+                inode(
+                    ileaf("one", 1),
+                    ileaf("two", 2)),
+                ileaf("three", 3));
+
+        Assert.Equal(expected, indexed);
+    }
+
+    private static Func<int, (ITree, int)> IndexLeaves(Tree tree) => counter =>
+        tree switch
         {
-            var (lLeft, counterL) = Relabel(node.Left).Run(counter);
-            var (lRight, counterR) = Relabel(node.Right).Run(counterL);
+            Tree.Leaf leaf => (ileaf(leaf.Value, counter), counter + 1),
+            Tree.Node node => Recurse(node, counter)
+        };
 
-            return (lNode(lLeft, lRight), counterR);
-        });
+    private static (ITree, int) Recurse(Tree.Node node, int counter)
+    {
+        var (iLeft, counterLeft) = IndexLeaves(node.Left)(counter);
+        var (iRight, counterRight) = IndexLeaves(node.Right)(counterLeft);
+        
+        return (inode(iLeft, iRight), counterRight);
+    }
 
-    private WithCounter Recurse(Node node) =>
-        Relabel(node.Left)
-            .Then(leftBranch => Relabel(node.Right)
-                .Then(rightBranch => 
-                    Pure(leftBranch, rightBranch)));
+    private GTree<int> MapLeaves(GTree<string> tree, Func<string, int> func) =>
+        tree switch
+        {
+            GLeaf leaf => gleaf(func(leaf.Value)),
+            GNode node => gnode(MapLeaves(node.Left, func), MapLeaves(node.Right, func))
+        };
 }
 
-static class WithCounterExtensions
+// data Tree = Leaf | Node Tree Tree
+internal interface Tree
 {
-    internal static WithCounter Then(this WithCounter a, Func<LTree, WithCounter> b) =>
-        new(counter =>
-        {
-            var (aValue, aCounter) = a.Run(counter);
-            var (bValue, bCounter) = b(aValue).Run(aCounter);
+    internal record Leaf(string Value) : Tree;
 
-            return (bValue, bCounter);
-        });
+    internal record Node(Tree Left, Tree Right) : Tree;
+}
 
-    internal static WithCounter Pure(LTree leftBranch, LTree rightBranch) => 
-        new(c => (lNode(leftBranch, rightBranch), c));
+internal interface ITree
+{
+    internal record ILeaf(string Value, int Index) : ITree;
 
-    internal record WithCounter(Func<int, (LTree, int)> Run);
+    internal record INode(ITree Left, ITree Right) : ITree;
+}
+
+// data GTree a = Leaf a | Node (GTree a) (GTree a)
+internal interface GTree<T>
+{
+    internal record GLeaf(T Value) : GTree<T>;
+
+    internal record GNode(GTree<T> Left, GTree<T> Right) : GTree<T>;
+}
+
+static class Factories
+{
+    internal static Tree leaf(string value) => new Tree.Leaf(value);
+    internal static Tree node(Tree left, Tree right) => new Tree.Node(left, right);
+
+    internal static ITree ileaf(string value, int index) => new ITree.ILeaf(value, index);
+    internal static ITree inode(ITree left, ITree right) => new ITree.INode(left, right);
+
+    internal static GTree<T> gleaf<T>(T value) => new GTree<T>.GLeaf(value);
+    internal static GTree<T> gnode<T>(GTree<T> left, GTree<T> right) => new GTree<T>.GNode(left, right);
 }
