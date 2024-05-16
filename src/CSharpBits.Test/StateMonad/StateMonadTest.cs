@@ -2,6 +2,7 @@
 using Xunit;
 using static CSharpBits.Test.StateMonad.Factories;
 using static CSharpBits.Test.StateMonad.GTree<string>;
+using static CSharpBits.Test.StateMonad.Tree;
 
 namespace CSharpBits.Test.StateMonad;
 
@@ -25,8 +26,8 @@ public class StateMonadTest
     private int CountLeaves(Tree tree) =>
         tree switch
         {
-            Tree.Leaf leaf => 1,
-            Tree.Node node => CountLeaves(node.Left) + CountLeaves(node.Right)
+            Leaf leaf => 1,
+            Node node => CountLeaves(node.Left) + CountLeaves(node.Right)
         };
 
     [Fact]
@@ -63,7 +64,7 @@ public class StateMonadTest
                 leaf("three"));
 
 
-        ITree indexed = IndexLeaves(tree)(1).Item1;
+        ITree indexed = IndexLeaves(tree).Run(1).Item1;
 
         var expected =
             inode(
@@ -75,17 +76,18 @@ public class StateMonadTest
         Assert.Equal(expected, indexed);
     }
 
-    private static Func<int, (ITree, int)> IndexLeaves(Tree tree) => counter =>
+    private static WithCounter IndexLeaves(Tree tree) => new(counter =>
         tree switch
         {
-            Tree.Leaf leaf => (ileaf(leaf.Value, counter), counter + 1),
-            Tree.Node node => Recurse(node, counter)
-        };
+            Leaf leaf => (ileaf(leaf.Value, counter), counter + 1),
+            Node node => Recurse(node, counter)
+        });
 
-    private static (ITree, int) Recurse(Tree.Node node, int counter)
+    private static (ITree, int) Recurse(Node node, int counter)
     {
-        var (iLeft, counterLeft) = IndexLeaves(node.Left)(counter);
-        var (iRight, counterRight) = IndexLeaves(node.Right)(counterLeft);
+        WithCounter indexLeaves = IndexLeaves(node.Left);
+        var (iLeft, counterLeft) = indexLeaves.Run(counter);
+        var (iRight, counterRight) = IndexLeaves(node.Right).Run(counterLeft);
         
         return (inode(iLeft, iRight), counterRight);
     }
@@ -97,6 +99,8 @@ public class StateMonadTest
             GNode node => gnode(MapLeaves(node.Left, func), MapLeaves(node.Right, func))
         };
 }
+
+record WithCounter(Func<int, (ITree, int)> Run);
 
 // data Tree = Leaf | Node Tree Tree
 internal interface Tree
@@ -123,8 +127,8 @@ internal interface GTree<T>
 
 static class Factories
 {
-    internal static Tree leaf(string value) => new Tree.Leaf(value);
-    internal static Tree node(Tree left, Tree right) => new Tree.Node(left, right);
+    internal static Tree leaf(string value) => new Leaf(value);
+    internal static Tree node(Tree left, Tree right) => new Node(left, right);
 
     internal static ITree ileaf(string value, int index) => new ITree.ILeaf(value, index);
     internal static ITree inode(ITree left, ITree right) => new ITree.INode(left, right);
