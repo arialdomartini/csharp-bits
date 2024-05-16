@@ -1,118 +1,108 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using Xunit;
+using static CSharpBits.Test.StateMonad.LTree.LLeaf;
+using static CSharpBits.Test.StateMonad.LTree.LNode;
+using static CSharpBits.Test.StateMonad.Tree;
+using static CSharpBits.Test.StateMonad.Tree.Leaf;
+using static CSharpBits.Test.StateMonad.Tree.Node;
+using static CSharpBits.Test.StateMonad.WithCounterExtensions;
 
 #pragma warning disable CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
 #pragma warning disable CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive).
 
 namespace CSharpBits.Test.StateMonad;
 
-interface Tree<T>
+interface Tree
 {
-    internal record Leaf(T Value) : Tree<T>;
+    internal record Leaf(String Value) : Tree
+    {
+        internal static Tree leaf(String value) => new Leaf(value);
+    }
 
-    internal record Node(Tree<T> Left, Tree<T> Right) : Tree<T>;
+    internal record Node(Tree Left, Tree Right) : Tree
+    {
+        internal static Tree node(Tree l, Tree r) => new Node(l, r);
+    }
+}
+
+interface LTree
+{
+    internal record LLeaf(String Value, int Counter) : LTree
+    {
+        internal static LTree lLeaf(String value, int counter) => new LLeaf(value, counter);
+    };
+
+    internal record LNode(LTree Left, LTree Right) : LTree
+    {
+        internal static LTree lNode(LTree l, LTree r) => new LNode(l, r);
+    }
 }
 
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 public class StateMonadTes2
 {
-    private Tree<string>.Node TreeWith3Leaves =
-        new(
-            new Tree<string>.Node(
-                new Tree<string>.Leaf("one"),
-                new Tree<string>.Leaf("two")),
-            new Tree<string>.Leaf("three"));
+    private Tree TreeWith3Leaves =
+        node(
+            node(
+                leaf("one"),
+                leaf("two")),
+            leaf("three"));
 
-    private static Tree<(int, string)>.Node LabeledTree = new Tree<(int, string)>.Node(
-        new Tree<(int, string)>.Node(
-            new Tree<(int, string)>.Leaf((1, "one")),
-            new Tree<(int, string)>.Leaf((2, "two"))),
-        new Tree<(int, string)>.Leaf((3, "three")));
+    private static LTree _lTree =
+        lNode(
+            lNode(
+                lLeaf("one", 1),
+                lLeaf("two", 2)),
+            lLeaf("three", 3));
 
-    [Fact]
-    void count_the_leaves()
-    {
-        Tree<string> tree =
-            TreeWith3Leaves;
-
-        var numberOfLeaves = CountLeaves(tree);
-
-        Assert.Equal(3, numberOfLeaves);
-    }
-
-    [Fact]
-    void map_leaves()
-    {
-        Tree<string> tree = TreeWith3Leaves;
-
-        var mapped = Map<string, string>(x => x)(tree);
-
-        Tree<string> expectedTree = TreeWith3Leaves;
-
-        Assert.Equal(expectedTree, mapped);
-    }
 
     [Fact]
     void relabel_tree_leaves()
     {
-        Tree<string> tree = TreeWith3Leaves;
+        Tree tree = TreeWith3Leaves;
 
         var relabled = Relabel(tree).Run(1).Item1;
 
-        Assert.Equal(LabeledTree, relabled);
+        Assert.Equal(_lTree, relabled);
     }
 
-
-    private WithCounter<Tree<(int, string)>> Relabel(Tree<string> tree)
-    {
-        if (tree is Tree<string>.Leaf leaf)
-        {
-            return new WithCounter<Tree<(int, string)>>(counter =>
-                (new Tree<(int, string)>.Leaf((counter, leaf.Value)), counter + 1));
-        }
-
-        if (tree is Tree<string>.Node node)
-        {
-            return
-                Relabel(node.Left)
-                    .Then(relabeledLeft => Relabel(node.Right)
-                        .Then(relabeledRight =>
-                            new WithCounter<Tree<(int, string)>>(
-                                counter => (new Tree<(int, string)>.Node(relabeledLeft, relabeledRight), counter))));
-        }
-
-        throw new NotImplementedException();
-    }
-
-    private Func<Tree<A>, Tree<B>> Map<A, B>(Func<A, B> func) =>
-        tree => tree switch
-        {
-            Tree<A>.Leaf l => new Tree<B>.Leaf(func(l.Value)),
-            Tree<A>.Node l => new Tree<B>.Node(
-                Left: Map(func)(l.Left),
-                Right: Map(func)(l.Right))
-        };
-
-    private int CountLeaves<T>(Tree<T> tree) =>
+    private WithCounter Relabel(Tree tree) =>
         tree switch
         {
-            Tree<T>.Leaf => 1,
-            Tree<T>.Node node => CountLeaves(node.Left) + CountLeaves(node.Right)
+            Leaf leaf => new WithCounter(counter => (lLeaf(leaf.Value, counter), counter + 1)),
+            Node node => Recurse(node)
         };
-}
 
-internal record WithCounter<T>(Func<int, (T, int)> Run);
+    private WithCounter RecurseManual(Node node) =>
+        new(counter =>
+        {
+            var (lLeft, counterL) = Relabel(node.Left).Run(counter);
+            var (lRight, counterR) = Relabel(node.Right).Run(counterL);
+
+            return (lNode(lLeft, lRight), counterR);
+        });
+
+    private WithCounter Recurse(Node node) =>
+        Relabel(node.Left)
+            .Then(leftBranch => Relabel(node.Right)
+                .Then(rightBranch => 
+                    Pure(leftBranch, rightBranch)));
+}
 
 static class WithCounterExtensions
 {
-    internal static WithCounter<B> Then<A, B>(this WithCounter<A> f, Func<A, WithCounter<B>> g)
-    {
-        return new WithCounter<B>(counter =>
+    internal static WithCounter Then(this WithCounter a, Func<LTree, WithCounter> b) =>
+        new(counter =>
         {
-            var (resultA, counter1) = f.Run(counter);
-            var (resultB, counter2) = g(resultA).Run(counter1);
-            return (resultB, counter2);
+            var (aValue, aCounter) = a.Run(counter);
+            var (bValue, bCounter) = b(aValue).Run(aCounter);
+
+            return (bValue, bCounter);
         });
-    }
+
+    internal static WithCounter Pure(LTree leftBranch, LTree rightBranch) => 
+        new(c => (lNode(leftBranch, rightBranch), c));
+
+    internal record WithCounter(Func<int, (LTree, int)> Run);
 }
