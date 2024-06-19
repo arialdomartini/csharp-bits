@@ -5,7 +5,7 @@ using Xunit;
 namespace CSharpBits.Test;
 
 delegate (TResult, decimal) StatefulComputation<in TSource, TResult>(TSource item, decimal total);
-
+public class ApplicativeParsingTest{}
 public class AnotherStateMonadTest
 {
     [Fact]
