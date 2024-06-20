@@ -32,15 +32,10 @@ static class EitherFuncs
                 ela switch
                 {
                     Either<string, a>.Left(var lvv) => new Either<string, b>.Left(lv + lvv),
-                    Either<string, a>.Right(var _) => new Either<string, b>.Left(lv)
+                    Either<string, a>.Right(_) => new Either<string, b>.Left(lv)
                 },
 
-            Either<string, Func<a, b>>.Right(var f) =>
-                ela switch
-                {
-                    Either<string, a>.Left(var lvv) => new Either<string, b>.Left(lvv),
-                    Either<string, a>.Right(var r) => new Either<string, b>.Right(f(r))
-                }
+            Either<string, Func<a, b>>.Right(var f) => map(f, ela)
         };
 
     internal static Either<l, r> pure<l, r>(this r v) => new Either<l, r>.Right(v);
@@ -71,13 +66,14 @@ public class ApplicativeParsingTest
         Either<string, int> age = parseAge();
 
         // Person person = buildPerson              (name,    age);
-        
+        //                     buildPerson               name     age        
+        //                 buildPerson           <$> name <*> age
+        //            pure buildPerson           <*> name <*> age        
+        // var either =  buildPerson.curried().pure()     .ap(name).ap(age);
         var either =       buildPerson.curried().map(name).ap(age);
         
-        
-        //                 buildPerson <$> name <*> age
-        //            pure buildPerson <*> name <*> age
+
         //              [| buildPerson         name     age |]
-        //                 pre buildPerson     name     age
+        
     }
 }
