@@ -232,7 +232,7 @@ public class DiamondKataTest
         });
 
     [Property]
-    Property each_line_is_a_palyndrome() =>
+    Property each_line_is_a_palyndrom() =>
         CheckProperty((list, _) =>
             list.ForAll(line => line.SequenceEqual(line.Reverse())));
 
