@@ -14,6 +14,9 @@ static class TestExtensions
     internal static string Joined(this IEnumerable<string> rows) =>
         string.Join("", rows);
 
+    internal static string Stringified(this IEnumerable<char> cs) =>
+        string.Join("", cs);
+
     internal static IEnumerable<char> DifferentLetters(this IList<string> rows) =>
         rows.IgnoringSpaces().SelectMany(row => row.Distinct()).Distinct();
 
@@ -34,6 +37,23 @@ static class TestExtensions
 
     internal static int TrailingSpaces(this string e) =>
         e.Reverse().TakeWhile(c => c == space).Count();
+
+    internal static int InnerSpaces(this string e)
+    {
+        var withoutLeadingSpaces = e
+            .SkipWhile(c => c == space)
+            .Stringified();
+        var withoutTrailingSpaces =
+            withoutLeadingSpaces
+                .Reverse()
+                .SkipWhile(c => c == space)
+                .Stringified();
+        var withoutNonSpaces = withoutTrailingSpaces
+            .Where(c => c == space)
+            .Stringified();
+        
+        return withoutNonSpaces.Length;
+    }
 
     private static string WithoutSpaces(this string s) =>
         string.Join("", s.Where(c => c != space));
@@ -126,25 +146,26 @@ public class DiamondKataTest
             return prop(diamond, upToChar);
         });
     }
-    
-    [Property]
-    Property does_not_contain_any_letter_beyond_the_target() =>
-        CheckProperty((rows, upTo) =>
-            rows.ForAll(s => s.ForAll(c => c <= upTo)));
+
 
     [Property]
-    Property contains_all_chars_under_the_target_included() =>
+    Property contains_only_chars_up_to_target() =>
+        CheckProperty((list, upToChar) =>
+            list.DifferentLetters().ForAll(c => c >= 'a' && c <= upToChar));
+
+    [Property]
+    Property contains_all_of_them() =>
         CheckProperty((list, upToChar) =>
             list.DifferentLetters().Count() == upToChar - 'a' + 1);
-    
+
     [Property]
-    Property number_of_lines()
+    Property distributed_in_2_times_minus_1_lines()
     {
         bool NumberOfLinesEqual2TimesDifferentLettersMinus1(IList<string> rows, char _)
         {
             int ExpectedNumberOfLines(int numberOfDifferentLetters) =>
                 2 + (numberOfDifferentLetters - 2) * 2 + 1;
-            
+
             return rows.Count == ExpectedNumberOfLines(rows.DifferentLetters().Count());
         }
 
@@ -152,14 +173,14 @@ public class DiamondKataTest
     }
 
     [Property]
-    Property no_line_is_empty() => 
+    Property no_line_is_empty() =>
         CheckProperty((rows, _) => rows.ForAll(row => !string.IsNullOrEmpty(row)));
 
     [Property]
     Property in_first_half_all_lines_are_disjointed() =>
         CheckProperty((rows, _) =>
             rows.Aggregate("", (i, s) => string.Join("", i.Intersect(s))).Length == 0);
-    
+
     [Property]
     Property first_half_is_sorted() =>
         CheckProperty((list, _) =>
@@ -167,12 +188,12 @@ public class DiamondKataTest
             IEnumerable<string> firstHalf = list.IgnoringSpaces().FirstHalf().ToList();
             return firstHalf.Order().SequenceEqual(firstHalf);
         });
-    
+
     [Property]
-    Property it_is_symmetric() =>
+    Property the_whole_list_is_symmetric() =>
         CheckProperty((list, _) =>
             list.SequenceEqual(list.Reverse()));
-    
+
     [Property]
     Property each_letter_but_extremes_are_repeated_twice() =>
         CheckProperty((list, _) =>
@@ -182,11 +203,26 @@ public class DiamondKataTest
         });
 
     [Property]
+    Property each_line_is_a_palyndrom() =>
+        CheckProperty((list, _) =>
+            list.ForAll(line => line.SequenceEqual(line.Reverse())));
+
+    [Property]
     Property center_element_contains_no_surrounding_spaces() =>
         CheckProperty((list, _) =>
         {
             var center = list.Center();
             return center.Trim() == center;
+        });
+
+    [Property]
+    Property peripheral_elements_contains_no_inner_spaces() =>
+        CheckProperty((list, _) =>
+        {
+            var first = list.First();
+            var last = list.Last();
+            var innerSpaces = first.InnerSpaces();
+            return innerSpaces == 0 && last.InnerSpaces() == 0;
         });
 
     [Property]
@@ -222,6 +258,25 @@ public class DiamondKataTest
                 return previous.TrailingSpaces() == next.TrailingSpaces() + 1;
             });
         });
+    
+    [Property]
+    Property each_line_contains_2_inner_spaces_less_than_the_next_one() =>
+        CheckProperty((list, _) =>
+        {
+            var firstHalf = list.FirstHalf().Skip(1);
+            var shifted = list.FirstHalf().Skip(2);
+            var together = firstHalf.Zip(shifted);
+
+            return together.ForAll(el =>
+            {
+                var previous = el.Item1;
+                var next = el.Item2;
+
+                var innerSpaces = previous.InnerSpaces();
+                var nextInnerSpaces = next.InnerSpaces();
+                return innerSpaces == nextInnerSpaces - 2;
+            });
+        });
 
     [Property]
     Property all_lines_have_the_same_length() =>
@@ -230,11 +285,6 @@ public class DiamondKataTest
             var x = list.Select(l => (l, l.Length));
             return list.Select(el => el.Length).Distinct().Count() == 1;
         });
-
-    [Property]
-    Property each_line_is_a_palyndrom() =>
-        CheckProperty((list, _) =>
-            list.ForAll(line => line.SequenceEqual(line.Reverse())));
 
     #region DoubleCheck
 
@@ -258,12 +308,10 @@ public class DiamondKataTest
             var secondHalf = list.SecondHalf();
             return firstHalf.SequenceEqual(secondHalf.Reverse());
         });
-    
+
     [Property]
     Property all_lines_have_an_odd_length() =>
-        CheckProperty((list, _) =>
-        {
-            return list.ForAll(el => el.Length().IsOdd());
-        });
+        CheckProperty((list, _) => { return list.ForAll(el => el.Length().IsOdd()); });
+
     #endregion
 }
