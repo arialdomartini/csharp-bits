@@ -35,11 +35,13 @@ static class TestExtensions
     internal static int TrailingSpaces(this string e) =>
         e.Reverse().TakeWhile(c => c == space).Count();
 
-    internal static string WithoutSpaces(this string s) =>
+    private static string WithoutSpaces(this string s) =>
         string.Join("", s.Where(c => c != space));
 
     internal static IList<string> IgnoringSpaces(this IEnumerable<string> s) =>
         s.Select(WithoutSpaces).ToList();
+
+    internal static bool IsOdd(this int i) => i % 2 == 1;
 }
 
 static class DiamondExtensions
@@ -188,7 +190,7 @@ public class DiamondKataTest
         });
 
     [Property]
-    Property each_line_contains_1_leading_space_less_than_the_next_one() =>
+    Property each_line_contains_1_leading_space_more_than_the_next_one() =>
         CheckProperty((list, _) =>
         {
             var firstHalf = list.FirstHalf();
@@ -205,7 +207,7 @@ public class DiamondKataTest
         });
 
     [Property]
-    Property each_line_contains_1_trailing_space_less_than_the_next_one() =>
+    Property each_line_contains_1_trailing_space_more_than_the_next_one() =>
         CheckProperty((list, _) =>
         {
             var firstHalf = list.FirstHalf();
@@ -255,6 +257,13 @@ public class DiamondKataTest
             var firstHalf = list.FirstHalf();
             var secondHalf = list.SecondHalf();
             return firstHalf.SequenceEqual(secondHalf.Reverse());
+        });
+    
+    [Property]
+    Property all_lines_have_an_odd_length() =>
+        CheckProperty((list, _) =>
+        {
+            return list.ForAll(el => el.Length().IsOdd());
         });
     #endregion
 }
