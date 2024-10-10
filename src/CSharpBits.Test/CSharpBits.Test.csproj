@@ -23,6 +23,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Bits\Bits.fsproj" />
         <ProjectReference Include="..\CSharpBits\CSharpBits.csproj" />
         <ProjectReference Include="..\IWillCrash\IWillCrash.csproj" />
     </ItemGroup>
