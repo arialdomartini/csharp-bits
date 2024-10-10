@@ -65,15 +65,17 @@ static class PrintDiamond
                 .Joined();
     }
 
-    private static string BuildLine(int index, int n) => 
-        Spaces(n-index-1) + (char)('a' + index) + Spaces(index);
+    private static IEnumerable<char> BuildLine(int index, int n) => 
+        Spaces(n-index-1).Append((char)('a' + index)).Append(Spaces(index));
 
-    private static string Joined(this IEnumerable<string> lines) => string.Join(Newline, lines);
-    private static string SemiDuplicate(string line) => $"{line}{new string(line.Reverse().Skip(1).ToArray())}";
-    private static IEnumerable<string> SemiDuplicate(this IEnumerable<string> lines) => lines.Append(lines.Reverse().Skip(1));
+    private static IEnumerable<char> Spaces(int numberOfSpaces) =>
+        Repeat(Space, numberOfSpaces);
 
-    private static string Spaces(int numberOfSpaces) =>
-        new(Space, numberOfSpaces);
+    private static string Joined(this IEnumerable<IEnumerable<char>> lines) => 
+        string.Join(Newline, lines);
+
+    private static IEnumerable<T> SemiDuplicate<T>(this IEnumerable<T> xs) => 
+        xs.Append(xs.Reverse().Skip(1));
 }
 
 internal static class TestHelper
