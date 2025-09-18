@@ -1,11 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace CSharpBits.Test.PureDI;
 
 file class Scope : IDisposable
 {
-    private IDisposable _level1;
+    private List<IDisposable> _disposables;
 
     internal Level1 Create()
     {
@@ -13,18 +15,18 @@ file class Scope : IDisposable
         var level2 = new Level2(level3);
         var level1 = new Level1(level2);
 
-        _level1 = level1;
+        _disposables = [level1, level2, level3];
         return level1;
     }
 
     public void Dispose()
     {
-        _level1.Dispose();
+        _disposables.ForEach(s => s.Dispose());
     }
 }
 
-file class Level1(
-    Level2 level2) : IDisposable
+file record  Level1(
+    Level2 Level2) : IDisposable
 {
     internal bool HasBeenDisposedOf;
 
@@ -34,10 +36,26 @@ file class Level1(
     }
 }
 
-file class Level2(
-    Level3 level3);
+file record  Level2(
+    Level3 Level3) : IDisposable
+{
+    internal bool HasBeenDisposedOf;
 
-file class Level3;
+    void IDisposable.Dispose()
+    {
+        HasBeenDisposedOf = true;
+    }
+}
+
+file record Level3 : IDisposable
+{
+    internal bool HasBeenDisposedOf;
+
+    void IDisposable.Dispose()
+    {
+        HasBeenDisposedOf = true;
+    }
+}
 
 public class SimpleCompositionRootWithDisposableRoot
 {
@@ -50,5 +68,7 @@ public class SimpleCompositionRootWithDisposableRoot
         compositionRoot.Dispose();
 
         Assert.True(level1.HasBeenDisposedOf);
+        Assert.True(level1.Level2.HasBeenDisposedOf);
+        Assert.True(level1.Level2.Level3.HasBeenDisposedOf);
     }
 }
