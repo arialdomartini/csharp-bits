@@ -2,8 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using static CSharpBits.Test.PureDI.SimpleCompositionRootWithDisposableRoot;
 
 namespace CSharpBits.Test.PureDI;
+
+internal static class DisposableExtensions
+{
+    internal static void DisposeOfAll(this List<IDisposable> disposables) => disposables.ForEach(s => s.Dispose());
+}
 
 file class Scope : IDisposable
 {
@@ -11,64 +17,145 @@ file class Scope : IDisposable
 
     internal Level1 Create()
     {
-        var level3 = new Level3();
-        var level2 = new Level2(level3);
-        var level1 = new Level1(level2);
+        Func<InnerScope> innerScopeFactory = () => new();
 
-        _disposables = [level1, level2, level3];
+        var level1 = new Level1(innerScopeFactory);
+
+        _disposables = [level1];
+
         return level1;
     }
 
     public void Dispose()
     {
-        _disposables.ForEach(s => s.Dispose());
+        _disposables.DisposeOfAll();
     }
 }
 
-file record  Level1(
-    Level2 Level2) : IDisposable
+file class InnerScope : IDisposable
 {
-    internal bool HasBeenDisposedOf;
+    private List<IDisposable> _disposables;
 
-    void IDisposable.Dispose()
+    internal Inner1 Create()
     {
-        HasBeenDisposedOf = true;
+        var inner2 = new Inner2();
+        var inner1 = new Inner1(inner2);
+
+        _disposables = [inner1, inner2];
+
+        return inner1;
+    }
+
+    public void Dispose()
+    {
+        _disposables.DisposeOfAll();
     }
 }
 
-file record  Level2(
-    Level3 Level3) : IDisposable
+file record Level1 : IDisposable
 {
-    internal bool HasBeenDisposedOf;
+    private readonly Func<InnerScope> _innerScopeFactory;
+
+    public Level1(Func<InnerScope> InnerScopeFactory)
+    {
+        Log("new Level1");
+        _innerScopeFactory = InnerScopeFactory;
+    }
 
     void IDisposable.Dispose()
     {
-        HasBeenDisposedOf = true;
+        Log("Disposing of Level1");
+    }
+
+    internal void DoJob()
+    {
+        Enumerable.Range(1, 5).ToList().ForEach(_ =>
+            {
+                using var scope = _innerScopeFactory();
+                var inner1 = scope.Create();
+                inner1.DoJob();
+            }
+        );
     }
 }
 
-file record Level3 : IDisposable
+file record Inner1(
+    Inner2 Inner2) : IDisposable
 {
-    internal bool HasBeenDisposedOf;
+    void IDisposable.Dispose() => Log("- Inner1");
 
+    internal void DoJob()
+    {
+        Inner2.DoJob();
+        Log("job Inner1");
+    }
+}
+
+file record Inner2 : IDisposable
+{
+    internal Inner2()
+    {
+        Log("+ Inner2");
+    }
     void IDisposable.Dispose()
     {
-        HasBeenDisposedOf = true;
+        Log("- Inner2");
     }
+
+    internal void DoJob() => Log("job Inner2");
 }
 
 public class SimpleCompositionRootWithDisposableRoot
 {
+    private static readonly List<string> Messages = new();
+
+    internal static void Log(string message) => Messages.Add(message);
+
     [Fact]
-    void chain_of_objects()
+    void run_all()
     {
         var compositionRoot = new Scope();
         var level1 = compositionRoot.Create();
+        level1.DoJob();
 
         compositionRoot.Dispose();
 
-        Assert.True(level1.HasBeenDisposedOf);
-        Assert.True(level1.Level2.HasBeenDisposedOf);
-        Assert.True(level1.Level2.Level3.HasBeenDisposedOf);
+        List<string> expected =
+            [
+                "new Level1",
+
+                    "+ Inner2",
+                    "job Inner2",
+                    "job Inner1",
+                    "- Inner1",
+                    "- Inner2",
+
+                    "+ Inner2",
+                    "job Inner2",
+                    "job Inner1",
+                    "- Inner1",
+                    "- Inner2",
+
+                    "+ Inner2",
+                    "job Inner2",
+                    "job Inner1",
+                    "- Inner1",
+                    "- Inner2",
+
+                    "+ Inner2",
+                    "job Inner2",
+                    "job Inner1",
+                    "- Inner1",
+                    "- Inner2",
+
+                    "+ Inner2",
+                    "job Inner2",
+                    "job Inner1",
+                    "- Inner1",
+                    "- Inner2",
+
+                "Disposing of Level1"
+                ];
+        Assert.Equal(expected, Messages);
     }
 }
