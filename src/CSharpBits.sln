@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IWillCrash", "IWillCrash\IW
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Bits", "Bits\Bits.fsproj", "{0263FC24-07DC-4D1A-8531-BA0D9BA67F9E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UsingFsCheck2", "UsingFsCheck2\UsingFsCheck2.csproj", "{893F2495-7041-45F9-9936-EAFD0C64A5D6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{0263FC24-07DC-4D1A-8531-BA0D9BA67F9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0263FC24-07DC-4D1A-8531-BA0D9BA67F9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0263FC24-07DC-4D1A-8531-BA0D9BA67F9E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{893F2495-7041-45F9-9936-EAFD0C64A5D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{893F2495-7041-45F9-9936-EAFD0C64A5D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{893F2495-7041-45F9-9936-EAFD0C64A5D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{893F2495-7041-45F9-9936-EAFD0C64A5D6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

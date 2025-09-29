@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace CSharpBits.Test;
+﻿namespace UsingFsCheck2.PrintDiamondKata;
 
 static class DiamondExtensions
 {

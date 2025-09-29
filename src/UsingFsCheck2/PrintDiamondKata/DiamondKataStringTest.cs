@@ -3,69 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using FsCheck;
 using FsCheck.Xunit;
-using static CSharpBits.Test.DiamondExtensions;
+using Xunit;
 
-namespace CSharpBits.Test;
+namespace UsingFsCheck2.PrintDiamondKata;
 
-delegate bool MyProp(IList<string> rows, char upTo);
-
-static class TestExtensions
+internal static class QuarterExtensions
 {
-    internal static string Joined(this IEnumerable<string> rows) =>
-        string.Join("", rows);
-
-    internal static string Stringified(this IEnumerable<char> cs) =>
-        string.Join("", cs);
-
-    internal static IEnumerable<char> DifferentLetters(this IList<string> rows) =>
-        rows.IgnoringSpaces().SelectMany(row => row.Distinct()).Distinct();
-
-    internal static IEnumerable<string> FirstHalf(this IList<string> list) =>
-        list.Take(list.Count / 2);
-
-    internal static IEnumerable<string> SecondHalf(this IList<string> list) =>
-        list.Skip(list.Count / 2 + 1);
-
-    internal static string Center(this IList<string> list) =>
-        list.Skip(list.Count / 2).First();
-
-    internal static IEnumerable<string> Twice(this IEnumerable<string> list) =>
-        list.Select(a => $"{a}{a}");
-
-    internal static int LeadingSpaces(this string e) =>
-        e.TakeWhile(c => c == space).Count();
-
-    internal static int TrailingSpaces(this string e) =>
-        e.Reverse().TakeWhile(c => c == space).Count();
-
-    internal static int InnerSpaces(this string e)
-    {
-        var withoutLeadingSpaces = e
-            .SkipWhile(c => c == space)
-            .Stringified();
-        var withoutTrailingSpaces =
-            withoutLeadingSpaces
-                .Reverse()
-                .SkipWhile(c => c == space)
-                .Stringified();
-        var withoutNonSpaces = withoutTrailingSpaces
-            .Where(c => c == space)
-            .Stringified();
-        
-        return withoutNonSpaces.Length;
-    }
-
-    private static string WithoutSpaces(this string s) =>
-        string.Join("", s.Where(c => c != space));
-
-    internal static IList<string> IgnoringSpaces(this IEnumerable<string> s) =>
-        s.Select(WithoutSpaces).ToList();
-
-    internal static bool IsOdd(this int i) => i % 2 == 1;
+    internal static IList<string> Quarter(this IList<string> strings) =>
+        strings
+            .Take(strings.Count / 2 + 1)
+            .Select(line => line.Substring(0, line.Length / 2 + 1))
+            .ToList();
 }
 
-
-public class DiamondKataTest
+public class DiamondKataStringTest
 {
     private static Gen<char> UpToChars() =>
         from c in Arb.Generate<char>()
@@ -78,22 +29,71 @@ public class DiamondKataTest
         var upToChars = UpToChars();
         return Prop.ForAll(upToChars.ToArbitrary(), upToChar =>
         {
-            var diamond = Diamond(upToChar);
+            var diamond = Bits.Diamond.diamond(upToChar).Split("\r\n");
 
             return prop(diamond, upToChar);
         });
     }
 
     [Property]
-    Property contains_only_chars_up_to_target() =>
+    Property output_is_vertically_symmetric() =>
+        CheckProperty((list, _) =>
+            list.SequenceEqual(list.Reverse()));
+    
+    [Property]
+    Property output_is_horizontally_symmetric() =>
+        CheckProperty((list, _) =>
+            list.ForAll(line => line.SequenceEqual(line.Reverse())));
+    
+    [Property]
+    Property quarter_contains_only_chars_up_to_target() =>
         CheckProperty((list, upToChar) =>
-            list.DifferentLetters().ForAll(c => c >= 'a' && c <= upToChar));
+            list.Quarter()
+                .DifferentLetters()
+                .ForAll(c => c >= 'a' && c <= upToChar));
 
+    [Property]
+    Property quarter_contains_all_letters_up_to_target() =>
+        CheckProperty((list, upToChar) =>
+        {
+            var quarter = list.Quarter();
+            return quarter
+                .DifferentLetters().Count() == upToChar - 'a' + 1;
+        });
+
+    [Property]
+    Property quarter_each_line_exactly_one_letter() =>
+        CheckProperty((list, _) =>
+            list.Quarter()
+                .ForAll(line => line.Distinct().Count() == 1));
+
+    
+    [Property]
+    Property each_line_contains_1_trailing_space_more_than_the_next_one() =>
+        CheckProperty((list, _) =>
+        {
+            var firstHalf = list.FirstHalf();
+            var shifted = list.FirstHalf().Skip(1);
+            var together = firstHalf.Zip(shifted);
+
+            return together.ForAll(el =>
+            {
+                var previous = el.Item1;
+                var next = el.Item2;
+
+                return previous.TrailingSpaces() == next.TrailingSpaces() + 1;
+            });
+        });
+
+    
     [Property]
     Property contains_all_of_them() =>
         CheckProperty((list, upToChar) =>
             list.DifferentLetters().Count() == upToChar - 'a' + 1);
 
+    
+    
+    
     [Property]
     Property distributed_in_2_times_minus_1_lines()
     {
@@ -124,11 +124,6 @@ public class DiamondKataTest
             IEnumerable<string> firstHalf = list.IgnoringSpaces().FirstHalf().ToList();
             return firstHalf.Order().SequenceEqual(firstHalf);
         });
-
-    [Property]
-    Property the_whole_list_is_symmetric() =>
-        CheckProperty((list, _) =>
-            list.SequenceEqual(list.Reverse()));
 
     [Property]
     Property each_letter_but_extremes_are_repeated_twice() =>
@@ -178,23 +173,6 @@ public class DiamondKataTest
             });
         });
 
-    [Property]
-    Property each_line_contains_1_trailing_space_more_than_the_next_one() =>
-        CheckProperty((list, _) =>
-        {
-            var firstHalf = list.FirstHalf();
-            var shifted = list.FirstHalf().Skip(1);
-            var together = firstHalf.Zip(shifted);
-
-            return together.ForAll(el =>
-            {
-                var previous = el.Item1;
-                var next = el.Item2;
-
-                return previous.TrailingSpaces() == next.TrailingSpaces() + 1;
-            });
-        });
-    
     [Property]
     Property each_line_contains_2_inner_spaces_less_than_the_next_one() =>
         CheckProperty((list, _) =>
@@ -250,4 +228,63 @@ public class DiamondKataTest
         CheckProperty((list, _) => { return list.ForAll(el => el.Length().IsOdd()); });
 
     #endregion
+
+
+    private int CallNumber = 0;
+    
+    private int FakeRandom()
+    {
+        CallNumber++;
+        return CallNumber switch
+        {
+            1 => 2,
+            2 => 8,
+            3 => 3,
+            4 => 4,
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    private Func<int> MakeFakeRandom(List<int> expectedValues)
+    {
+        var callNumber = 0;
+
+        return () => expectedValues[callNumber++];
+    }
+
+    [Fact]
+    void fake_random_with_factory()
+    {
+        // 2 8 3 4 
+        var fakeRandom = MakeFakeRandom([2, 8, 3, 4]);
+        
+        int i1 = fakeRandom();
+        Assert.Equal(2, i1);
+        
+        int i2 = fakeRandom();
+        Assert.Equal(8, i2);
+        
+        int i3 = fakeRandom();
+        Assert.Equal(3, i3);
+        
+        int i4 = fakeRandom();
+        Assert.Equal(4, i4);
+    }
+
+    [Fact]
+    void fake_random()
+    {
+        // 2 8 3 4 
+        int i1 = FakeRandom();
+        Assert.Equal(2, i1);
+        
+        int i2 = FakeRandom();
+        Assert.Equal(8, i2);
+        
+        int i3 = FakeRandom();
+        Assert.Equal(3, i3);
+        
+        int i4 = FakeRandom();
+        Assert.Equal(4, i4);
+    }
 }

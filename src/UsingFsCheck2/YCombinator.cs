@@ -1,9 +1,8 @@
-﻿using System;
-using FsCheck;
+﻿using FsCheck;
 using FsCheck.Xunit;
 using static FsCheck.Prop;
 
-namespace CSharpBits.Test;
+namespace UsingFsCheck2;
 
 public class YCombinator
 {

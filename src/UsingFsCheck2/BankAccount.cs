@@ -1,21 +1,13 @@
-using System;
 using FsCheck;
 using FsCheck.Xunit;
 using Xunit;
-using Xunit.Abstractions;
-using static CSharpBits.Test.CodingGym.WithdrawalResult;
+using static UsingFsCheck2.WithdrawalResult;
 
-namespace CSharpBits.Test.CodingGym;
+namespace UsingFsCheck2;
 
 public class BankAccountTest
 {
-    private readonly Arbitrary<int> PositiveNumber =
-        Arb.Generate<int>()
-            .Select(Math.Abs)
-            .Where(n => n > 0)
-            .ToArbitrary();
-
-    private BankAccount _bankAccount;
+    private readonly BankAccount _bankAccount = new();
 
     [Property]
     void withdrawal_not_possible_with_empty_account(PositiveInt forAnyAmount)
@@ -47,7 +39,6 @@ public class BankAccountTest
     [Property]
     void withdrawn_amount_is_possible_as_long_as_deposit_is_equal_or_larger(PositiveInt valueToDeposit)
     {
-        _bankAccount = new BankAccount();
         var toDeposit = new Amount(valueToDeposit.Item);
 
         var currentBalance = _bankAccount.Deposit(toDeposit);
@@ -61,7 +52,6 @@ public class BankAccountTest
         PositiveInt b)
     {
 
-        _bankAccount = new BankAccount();
         _bankAccount.Deposit(new Amount(a.Item));
 
         var currentBalance = _bankAccount.Deposit(new Amount(b.Item));
@@ -78,7 +68,7 @@ internal record Amount(int Value)
 
     internal static Amount Of(int value) => new(value);
 
-    public Amount Add(Amount toAdd) => Amount.Of(Value + toAdd.Value);
+    public Amount Add(Amount toAdd) => Of(Value + toAdd.Value);
 };
 
 internal class BankAccount

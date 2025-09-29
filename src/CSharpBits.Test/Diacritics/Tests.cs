@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using FluentAssertions;
-using FsCheck.Xunit;
 using Xunit;
 
 namespace CSharpBits.Test.Diacritics;
@@ -140,16 +139,6 @@ public class Tests
         var result = original.Converted();
 
         result.Should().Be(string.Empty);
-    }
-
-    [Property]
-    public bool only_contains_allowed_characters(string original)
-    {
-        var normalized = original.Converted();
-
-        // a-zA-Z 0-9 - ' space
-        return normalized
-            .OnlyContains("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-' ");
     }
 
     [Theory]

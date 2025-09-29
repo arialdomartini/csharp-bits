@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace CSharpBits.Test;
-using FsCheck;
+﻿using FsCheck;
 using FsCheck.Xunit;
 using Xunit;
+
+namespace UsingFsCheck2;
 
 public class PrachiKata1Property
 {
